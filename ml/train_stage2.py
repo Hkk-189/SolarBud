@@ -1,5 +1,6 @@
 import argparse
 import subprocess
+import time
 
 import lightgbm as lgb
 import numpy as np
@@ -23,6 +24,8 @@ def _sha() -> str:
 
 def _weights(y: pd.Series, w: dict) -> np.ndarray:
     """Upweight storm-level targets (Kp>=5-, Kp>=7-); empty config gives all-ones (no change)."""
+    if bad := set(w) - {"kp5", "kp7"}:
+        raise ValueError(f"unknown event_weight keys {sorted(bad)}; allowed: kp5, kp7")
     return (
         1 + (w.get("kp5", 1) - 1) * (y >= 4.667) + (w.get("kp7", 1) - 1) * (y >= 6.667)
     ).to_numpy(float)
@@ -39,13 +42,14 @@ def main(config: str) -> None:
         tr, va = m["train"] & ok, m["val"] & ok
         rng = (str(X.index[tr].min()), str(X.index[tr].max()))
         newell = NewellKp().fit(X.loc[tr, NEWELL_COL], y[tr])
+        t_fit = time.perf_counter()
         model = QuantileKp(seed=cfg["seed"], **cfg["lgbm"]).fit(
             X[tr],
             y[tr],
             sample_weight=_weights(y[tr], cfg.get("event_weight", {})),
             eval_set=[(X[va], y[va])],
             eval_sample_weight=[_weights(y[va], cfg.get("event_weight", {}))],
-            callbacks=[lgb.early_stopping(50, verbose=False)],
+            callbacks=[lgb.early_stopping(50, verbose=False), lgb.log_evaluation(50)],
         )
         val_rmse = float(np.sqrt(np.mean((model.predict(X[va])[:, 1] - y[va]) ** 2)))
         meta = {
@@ -57,7 +61,10 @@ def main(config: str) -> None:
         }
         registry.save(model, meta, out / f"stage2_h{h}.joblib")
         registry.save(newell, meta, out / f"newell_h{h}.joblib")
-        print(f"h={h}: train rows={int(tr.sum())} val rows={int(va.sum())} val_rmse={val_rmse:.3f}")
+        print(
+            f"h={h}: train rows={int(tr.sum())} val rows={int(va.sum())} val_rmse={val_rmse:.3f} fit_s={time.perf_counter() - t_fit:.0f}",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

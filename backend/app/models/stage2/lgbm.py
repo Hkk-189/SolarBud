@@ -9,7 +9,7 @@ class QuantileKp:
 
     version = "stage2-lgbm-0.1.0"
 
-    def __init__(self, seed: int = 0, **params):
+    def __init__(self, seed: int = 0, n_jobs: int = 1, **params):
         self.columns: list[str] = []
         self.models = [
             lgb.LGBMRegressor(
@@ -17,7 +17,7 @@ class QuantileKp:
                 alpha=q,
                 random_state=seed,
                 deterministic=True,
-                n_jobs=1,
+                n_jobs=n_jobs,
                 verbose=-1,
                 **params,
             )
