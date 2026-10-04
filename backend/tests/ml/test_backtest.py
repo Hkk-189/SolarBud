@@ -64,27 +64,6 @@ def levels(events):
     return [e.level for e in events]
 
 
-def test_storm_replays_warning_active_all_clear():
-    rows = (
-        [(0, 2.0, -1.0)] * 3 + [(1, 3.0, -15.0)] * 2 + [(1, 5.0, -20.0)] * 2 + [(0, 3.0, 1.0)] * 3
-    )
-    assert levels(replay(frame(rows), MODELS)) == [Level.WARNING, Level.ACTIVE, Level.ALL_CLEAR]
-
-
-def test_l1_gap_is_stale_and_never_escalates():
-    rows = [(1, 3.0, np.nan)] * 5
-    assert replay(frame(rows), MODELS) == []
-
-
-def test_missing_kp_is_not_active_and_does_not_crash():
-    rows = [(1, np.nan, -15.0)] * 3
-    ev = replay(frame(rows), MODELS)
-    assert levels(ev) == [Level.WARNING] and ev[0].observed_kp is None
-
-
-def test_event_time_is_the_cycle_time():
-    ev = replay(frame([(1, 3.0, -15.0)] * 2), MODELS)
-    assert ev[0].issued_at == pd.Timestamp("2024-05-10 00:05", tz="UTC")
 def test_quiet_no_events():
     ticks, events = replay(omni(), kp(), ts("12:00"), ts("14:00"), models(lambda t: LOW))
     assert events == []

@@ -1,7 +1,5 @@
 .PHONY: setup dev migrate load-history test test-e2e lint fmt train-stage2 evaluate backtest
 setup:        ; cd backend && uv sync && cd ../web && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm install --frozen-lockfile
-.PHONY: setup dev migrate load-history test lint fmt train-stage2 evaluate backtest
-setup:        ; cd backend && uv sync
 dev:          ; docker compose up --build
 migrate:      ; cd backend && uv run alembic upgrade head
 load-history: ; cd backend && uv run python -m app.ingest.history
@@ -11,6 +9,5 @@ lint:         ; cd backend && uv run ruff check . ../ml && uv run ruff format --
 fmt:          ; cd backend && uv run ruff format . ../ml
 train-stage2: ; cd backend && PYTHONPATH=.. uv run python -m ml.train_stage2 --config ml/configs/stage2.yaml
 evaluate:     ; cd backend && PYTHONPATH=.. uv run python -m ml.evaluate --config ml/configs/stage2.yaml
-backtest:     ; cd backend && PYTHONPATH=.. uv run python -m ml.backtest --storm $(STORM)
 STORM ?= 2024-05-gannon
 backtest:     ; cd backend && PYTHONPATH=.. uv run python -m ml.backtest --config ml/configs/stage2.yaml --storm $(STORM)
