@@ -10,7 +10,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def load_cfg(path: str | Path) -> dict:
-    return yaml.safe_load(Path(path).read_text())
+    return yaml.safe_load((ROOT / path).read_text())  # absolute paths pass through
 
 
 def build(cfg: dict) -> tuple[pd.DataFrame, dict[int, pd.Series]]:

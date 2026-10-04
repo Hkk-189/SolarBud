@@ -57,6 +57,10 @@ def main(config: str) -> None:
             "newell-kp": newell.predict(Xt["newell_mean_3h"]),
             "lgbm-p50": q[:, 1],
         }
+        # score every model on the same rows: the Newell baseline is NaN where its window has gaps
+        same = np.all([np.isfinite(v) for v in preds.values()], axis=0)
+        preds = {k: v[same] for k, v in preds.items()}
+        yt, q = yt[same], q[same]
         ref = _rmse(preds["persistence"], yt)
         for name, p in preds.items():
             ev = {k: contingency(yt, p, t) for k, t in THRESHOLDS.items()}
