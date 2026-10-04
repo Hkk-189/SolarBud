@@ -21,6 +21,13 @@ def _sha() -> str:
         return "unknown"
 
 
+def _weights(y: pd.Series, w: dict) -> np.ndarray:
+    """Upweight storm-level targets (Kp>=5-, Kp>=7-); empty config gives all-ones (no change)."""
+    return (
+        1 + (w.get("kp5", 1) - 1) * (y >= 4.667) + (w.get("kp7", 1) - 1) * (y >= 6.667)
+    ).to_numpy(float)
+
+
 def main(config: str) -> None:
     cfg = load_cfg(config)
     hold = load_cfg(ROOT / cfg["holdout"])
@@ -35,7 +42,9 @@ def main(config: str) -> None:
         model = QuantileKp(seed=cfg["seed"], **cfg["lgbm"]).fit(
             X[tr],
             y[tr],
+            sample_weight=_weights(y[tr], cfg.get("event_weight", {})),
             eval_set=[(X[va], y[va])],
+            eval_sample_weight=[_weights(y[va], cfg.get("event_weight", {}))],
             callbacks=[lgb.early_stopping(50, verbose=False)],
         )
         val_rmse = float(np.sqrt(np.mean((model.predict(X[va])[:, 1] - y[va]) ** 2)))
