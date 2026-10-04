@@ -1,0 +1,10 @@
+# Held-out storms are sacred: excluded (+-buffer_days) from training, tuning and feature selection.
+buffer_days: 7
+val_start: "2022-01-01"
+test_start: "2025-01-01"   # contiguous test block, in addition to the named storms
+storms:
+  - {id: 2003-10-halloween, start: "2003-10-28", end: "2003-11-01"}
+  - {id: 2015-03-stpatricks, start: "2015-03-16", end: "2015-03-19"}
+  - {id: "2017-09", start: "2017-09-06", end: "2017-09-10"}
+  - {id: 2024-05-gannon, start: "2024-05-10", end: "2024-05-12"}
+  - {id: "2024-10", start: "2024-10-09", end: "2024-10-12"}
