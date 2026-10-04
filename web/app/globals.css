@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* Tokens come from DESIGN.md. Light is the default; dark overrides follow the OS setting unless
+   the user forces a theme with data-theme. The two dark blocks must stay identical (tested). */
+:root {
+  --background: #fcfaf7;
+  --foreground: #423d38;
+  --surface: #f3f4f6;
+  --surface-soft: #edebe9;
+  --surface-elevated: #ffffff;
+  --muted: #6f665d;
+  --outline: #e3e0dd;
+  --outline-strong: #d1d5dc;
+  --primary: #fe6e00;
+  --primary-strong: #ff6b00;
+  --primary-warm: #ffb74d;
+  --primary-focus: #f97015;
+  --primary-fill: #c25100;
+  --primary-fill-hover: #a84500;
+  --on-primary: #ffffff;
+  --g0-bg: #dcfce7;
+  --g0-fg: #016630;
+  --g1-bg: #fef9c2;
+  --g1-fg: #874b00;
+  --g2-bg: #ffe08a;
+  --g2-fg: #6b3d00;
+  --g3-bg: #ffe2e2;
+  --g3-fg: #9f0712;
+  --g4-bg: #c10007;
+  --g4-fg: #ffffff;
+  --g5-bg: #82181a;
+  --g5-fg: #ffffff;
+  --shell-bg: rgba(0, 0, 0, 0.7);
+  --shell-border: rgba(255, 255, 255, 0.1);
+  --on-shell: #ffffff;
+  --on-shell-muted: rgba(255, 255, 255, 0.7);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #413830;
+    --foreground: #fafaf9;
+    --surface: #4a423a;
+    --surface-soft: #4a423a;
+    --surface-elevated: #4a423a;
+    --muted: #b9b3ac;
+    --outline: #5c5249;
+    --outline-strong: #6d6258;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #413830;
+  --foreground: #fafaf9;
+  --surface: #4a423a;
+  --surface-soft: #4a423a;
+  --surface-elevated: #4a423a;
+  --muted: #b9b3ac;
+  --outline: #5c5249;
+  --outline-strong: #6d6258;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-card: var(--surface-elevated);
+  --color-muted: var(--muted);
+  --color-outline: var(--outline);
+  --color-primary: var(--primary);
+  --color-primary-fill: var(--primary-fill);
+  --color-primary-fill-hover: var(--primary-fill-hover);
+  --color-on-primary: var(--on-primary);
+  --color-focus: var(--primary-focus);
+  --radius-control: 8px;
+  --radius-input: 6px;
+  --radius-card: 12px;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Dark frosted shell: black at 70% opacity, 12px blur, faint white border. */
+.glass {
+  background: var(--shell-bg);
+  border-color: var(--shell-border);
+  color: var(--on-shell);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-focus);
+  outline-offset: 2px;
+}
