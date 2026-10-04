@@ -1,4 +1,4 @@
-.PHONY: setup dev migrate load-history test lint fmt train-stage2 evaluate
+.PHONY: setup dev migrate load-history test lint fmt train-stage2 evaluate backtest
 setup:        ; cd backend && uv sync
 dev:          ; docker compose up --build
 migrate:      ; cd backend && uv run alembic upgrade head
@@ -8,3 +8,5 @@ lint:         ; cd backend && uv run ruff check . ../ml && uv run ruff format --
 fmt:          ; cd backend && uv run ruff format . ../ml
 train-stage2: ; cd backend && PYTHONPATH=.. uv run python -m ml.train_stage2 --config ml/configs/stage2.yaml
 evaluate:     ; cd backend && PYTHONPATH=.. uv run python -m ml.evaluate --config ml/configs/stage2.yaml
+STORM ?= 2024-05-gannon
+backtest:     ; cd backend && PYTHONPATH=.. uv run python -m ml.backtest --config ml/configs/stage2.yaml --storm $(STORM)
