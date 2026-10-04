@@ -159,7 +159,7 @@ def main(config: str, storm: str, pad_days: int = 2, tz: str = "Asia/Kolkata") -
     summary = summarise(ticks, events, kp3h)
     out = ROOT / "docs" / "reports" / f"replay-{storm}.md"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(_report(storm, tz, summary, ticks, events, omni5, DEFAULT_CFG))
+    out.write_text(_report(storm, tz, summary, ticks, events, omni5, DEFAULT_CFG), encoding="utf-8")
     print(f"{storm}: {[(str(e.level), f'{e.issued_at:%m-%d %H:%M}') for e in events]} -> {out}")
     return 0 if summary["sequence_ok"] else 1
 
