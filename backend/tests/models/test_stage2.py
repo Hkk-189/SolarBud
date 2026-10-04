@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from app.models import registry
 from app.models.stage2.baselines import NewellKp, persistence
@@ -43,3 +44,14 @@ def test_registry_round_trip(tmp_path):
     m2, meta2 = registry.load(tmp_path / "m.joblib")
     np.testing.assert_array_equal(m.predict(X), m2.predict(X))
     assert meta2 == meta
+
+
+def test_p_exceed_hand_computed():
+    from app.models.stage2.lgbm import p_exceed
+
+    q = np.array([[2.0, 4.0, 6.0]] * 5 + [[3.0, 3.0, 3.0]])
+    thr = np.array([1.0, 3.0, 5.0, 6.0, 9.0])
+    got = [p_exceed(q[i : i + 1], t)[0] for i, t in enumerate(thr)]
+    assert np.allclose(got, [0.9, 0.7, 0.3, 0.1, 0.1])  # CDF 0.1, 0.3, 0.7, 0.9, 0.9
+    assert p_exceed(q[5:], 3.0)[0] == pytest.approx(0.9)  # tied quantiles, no NaN
+    assert p_exceed(q[5:], 3.1)[0] == pytest.approx(0.1)

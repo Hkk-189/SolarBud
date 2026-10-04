@@ -41,11 +41,27 @@ def _rmse(a, b) -> float:
     return float(np.sqrt(np.mean((np.asarray(a) - np.asarray(b)) ** 2)))
 
 
+def _score(yt, preds: dict, ref: float) -> list[tuple]:
+    """One row per model: RMSE, MAE, skill vs persistence and event skill per threshold."""
+    return [
+        (
+            name,
+            _rmse(p, yt),
+            float(np.mean(np.abs(p - yt))),
+            skill(_rmse(p, yt), ref),
+            {k: contingency(yt, p, t) for k, t in THRESHOLDS.items()},
+        )
+        for name, p in preds.items()
+    ]
+
+
 def main(config: str) -> None:
     cfg = load_cfg(config)
     X, ys = build(cfg)
-    test = split_masks(pd.DatetimeIndex(X.index), load_cfg(ROOT / cfg["holdout"]))["test"]
-    rows, lines = [], []
+    hold = load_cfg(ROOT / cfg["holdout"])
+    idx = pd.DatetimeIndex(X.index)
+    test = split_masks(idx, hold)["test"]
+    rows, lines, storm_rows = [], [], []
     for h, y in ys.items():
         ok = test & y.notna().to_numpy() & X["kp_last"].notna().to_numpy()
         Xt, yt = X[ok], y[ok].to_numpy()
@@ -60,34 +76,63 @@ def main(config: str) -> None:
         # score every model on the same rows: the Newell baseline is NaN where its window has gaps
         same = np.all([np.isfinite(v) for v in preds.values()], axis=0)
         preds = {k: v[same] for k, v in preds.items()}
-        yt, q = yt[same], q[same]
+        yt, q, tidx = yt[same], q[same], idx[ok][same]
         ref = _rmse(preds["persistence"], yt)
-        for name, p in preds.items():
-            ev = {k: contingency(yt, p, t) for k, t in THRESHOLDS.items()}
-            rows.append(
-                (
-                    h,
-                    name,
-                    _rmse(p, yt),
-                    float(np.mean(np.abs(p - yt))),
-                    skill(_rmse(p, yt), ref),
-                    ev["Kp>=5"]["TSS"],
-                    ev["Kp>=5"]["HSS"],
-                    ev["Kp>=7"]["TSS"],
-                )
-            )
+        for name, r, m, sk, ev in _score(yt, preds, ref):
+            rows.append((h, name, r, m, sk, ev))
         lines.append(
             f"- +{h} h: n={len(yt)}, 80% interval coverage = {coverage(yt, q[:, 0], q[:, 2]):.2f}"
         )
-    head = "| h | model | RMSE | MAE | skill vs persistence | TSS Kp>=5 | HSS Kp>=5 | TSS Kp>=7 |\n|---|---|---|---|---|---|---|---|\n"
-    table = head + "\n".join(
-        f"| +{r[0]} | {r[1]} | {r[2]:.3f} | {r[3]:.3f} | {r[4]:+.3f} | {r[5]:.2f} | {r[6]:.2f} | {r[7]:.2f} |"
-        for r in rows
+        for s in hold["storms"]:
+            a = pd.Timestamp(s["start"], tz="UTC")
+            m = (tidx >= a) & (tidx < pd.Timestamp(s["end"], tz="UTC") + pd.Timedelta(days=1))
+            if m.sum() == 0:
+                continue
+            sp = {k: v[m] for k, v in preds.items()}
+            r0 = _rmse(sp["persistence"], yt[m])
+            for name, r, _, _, ev in _score(yt[m], sp, r0):
+                storm_rows.append((s["id"], h, name, r, ev["Kp>=5"]["POD"], ev["Kp>=5"]["TSS"]))
+
+    def md(header: str, body: list[str]) -> str:
+        cols = header.count("|") - 1
+        return chr(10).join([header, "|" + "---|" * cols, *body])
+
+    table = md(
+        "| h | model | RMSE | MAE | skill vs persistence | POD Kp>=5 | FAR Kp>=5 | TSS Kp>=5 "
+        "| HSS Kp>=5 | POD Kp>=7 | TSS Kp>=7 |",
+        [
+            f"| +{h} | {n} | {r:.3f} | {m:.3f} | {sk:+.3f} | {e['Kp>=5']['POD']:.2f} "
+            f"| {e['Kp>=5']['FAR']:.2f} | {e['Kp>=5']['TSS']:.2f} | {e['Kp>=5']['HSS']:.2f} "
+            f"| {e['Kp>=7']['POD']:.2f} | {e['Kp>=7']['TSS']:.2f} |"
+            for h, n, r, m, sk, e in rows
+        ],
     )
+    storm_tab = md(
+        "| storm | h | model | RMSE | POD Kp>=5 | TSS Kp>=5 |",
+        [
+            f"| {s} | +{h} | {n} | {r:.3f} | {pod:.2f} | {tss:.2f} |"
+            for s, h, n, r, pod, tss in storm_rows
+        ],
+    )
+    nl = chr(10)
     text = (
-        f"# Stage 2 model card (LightGBM quantile)\n\nGenerated {datetime.now(UTC):%Y-%m-%d} on the test split (held-out storms + 2025 onward).\n\n{table}\n\n"
-        + "\n".join(lines)
-        + "\n"
+        "# Stage 2 model card (LightGBM quantile)"
+        + nl
+        + nl
+        + f"Generated {datetime.now(UTC):%Y-%m-%d} on the test split (held-out storms + 2025 onward)."
+        + nl
+        + nl
+        + table
+        + nl
+        + nl
+        + nl.join(lines)
+        + nl
+        + nl
+        + "## Per held-out storm"
+        + nl
+        + nl
+        + storm_tab
+        + nl
     )
     print(text)
     (ROOT / "docs" / "model-cards").mkdir(parents=True, exist_ok=True)
