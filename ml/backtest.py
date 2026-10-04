@@ -1,63 +1,174 @@
-"""Replay a named storm through the Stage 2 models and the alert engine (dry-run: nothing is sent).
+"""Dry-run replay of a named storm: features -> model -> alert engine -> rendered messages.
 
-OMNI is already shifted to the bow shock, so this reuses the training feature path
-(ml.dataset.build) and must not go through shift_to_bowshock a second time.
+Nothing is sent. OMNI is already at the bow shock, so it enters `forecast_from_5min` directly
+(AGENTS section 6 rule 4: never shift twice). One cycle per 5 min, like the worker.
 """
 
 import argparse
+from dataclasses import dataclass
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 
-from app.alerts.engine import AlertConfig, AlertEvent, AlertState, step
-from app.core.constants import HORIZONS_H
+from app.alerts.engine import (
+    DEFAULT_CFG,
+    AlertConfig,
+    AlertEvent,
+    AlertState,
+    Level,
+    _p,
+    step,
+)
+from app.alerts.templates import render
+from app.core.constants import HORIZONS_H, KP_TOL
+from app.features.targets import kp_last
 from app.models import registry
-from app.schemas.forecast import Horizon, KpForecast
-from ml.dataset import ROOT, build, load_cfg
+from app.schemas.forecast import KpForecast
+from app.workers.scheduler import forecast_from_5min
+from ml.dataset import ROOT, load_cfg
 
-STALE_COL = "bz_gsm_nt_mean_30min"  # NaN here means an OMNI gap: treated as stale L1 data
+CADENCE = pd.Timedelta("5min")
+HISTORY = pd.Timedelta("8h")  # the worker's query window
+SEQUENCE = [Level.WARNING, Level.ACTIVE, Level.ALL_CLEAR]
 
 
-def replay(X: pd.DataFrame, models: dict, cfg: AlertConfig | None = None) -> list[AlertEvent]:
-    """One engine step per 5-min row of X. Returns the alert events in time order."""
-    cfg = cfg or AlertConfig()
-    q = {h: models[h].predict(X) for h in HORIZONS_H}
-    stale = X[STALE_COL].isna().to_numpy()
-    kp = X["kp_last"].to_numpy(float)
-    state, events = AlertState(), []
-    for i, t in enumerate(X.index):
-        horizons = [Horizon(horizon_h=h, p10=q[h][i, 0], p50=q[h][i, 1], p90=q[h][i, 2]) for h in q]
-        fc = KpForecast(
-            issued_at=t, model_version="replay", data_stale=bool(stale[i]), horizons=horizons
+@dataclass(frozen=True)
+class Tick:
+    t: datetime
+    p: float
+    observed_kp: float | None
+    stale: bool
+    level: Level
+
+
+def _last_sample(omni5: pd.DataFrame, t: pd.Timestamp) -> datetime | None:
+    """End of the newest complete bin with speed and Bz (bins starting before t only)."""
+    ok = omni5.loc[t - HISTORY : t - CADENCE, ["speed_kms", "bz_gsm_nt"]].dropna()
+    return None if ok.empty else (ok.index[-1] + pd.Timedelta("4min")).to_pydatetime()
+
+
+def replay(
+    omni5: pd.DataFrame,
+    kp3h: pd.Series,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    models: dict,
+    cfg: AlertConfig = DEFAULT_CFG,
+) -> tuple[list[Tick], list[AlertEvent]]:
+    state, ticks, events = AlertState(), [], []
+    for t in pd.date_range(start, end, freq=CADENCE):
+        out = forecast_from_5min(
+            omni5.loc[t - HISTORY : t], kp3h, t.to_pydatetime(), _last_sample(omni5, t), models
         )
-        state, ev = step(state, fc, None if np.isnan(kp[i]) else float(kp[i]), cfg)
-        events += ev
-    return events
+        fc = KpForecast(**out)
+        obs = kp_last(pd.DatetimeIndex([t]), kp3h).iloc[0]
+        observed = None if np.isnan(obs) else float(obs)
+        state, new = step(state, fc, observed, cfg)
+        events += new
+        ticks.append(
+            Tick(t.to_pydatetime(), _p(fc, cfg.kp_threshold), observed, fc.data_stale, state.level)
+        )
+    return ticks, events
 
 
-def main(storm_id: str, config: str = "ml/configs/stage2.yaml") -> None:
+def summarise(
+    ticks: list[Tick], events: list[AlertEvent], kp3h: pd.Series, cfg: AlertConfig = DEFAULT_CFG
+) -> dict:
+    thr = cfg.kp_threshold - KP_TOL
+
+    def first(level: Level) -> datetime | None:
+        return next((e.issued_at for e in events if e.level == level), None)
+
+    def storm_within(a: pd.Timestamp, b: pd.Timestamp) -> bool:
+        return bool((kp3h.loc[a:b] >= thr).any())
+
+    onset = kp3h.loc[
+        pd.Timestamp(ticks[0].t).floor("3h") : pd.Timestamp(ticks[-1].t)
+        + pd.Timedelta(hours=max(HORIZONS_H))
+    ]
+    onset = onset[onset >= thr]
+    first_obs = onset.index[0].to_pydatetime() if len(onset) else None
+    warn = first(Level.WARNING)
+    it = iter(e.level for e in events)
+    return {
+        "first_warning": warn,
+        "first_active": first(Level.ACTIVE),
+        "all_clear": first(Level.ALL_CLEAR),
+        "first_obs_g1": first_obs,
+        "lead_h": (first_obs - warn).total_seconds() / 3600 if warn and first_obs else None,
+        "sequence_ok": all(lv in it for lv in SEQUENCE),
+        "false_warnings": sum(
+            not storm_within(
+                pd.Timestamp(e.issued_at).floor("3h"),
+                pd.Timestamp(e.issued_at) + pd.Timedelta(hours=max(HORIZONS_H)),
+            )
+            for e in events
+            if e.level == Level.WARNING
+        ),
+    }
+
+
+def _utc(idx: pd.Index) -> pd.DatetimeIndex:
+    d = pd.DatetimeIndex(idx)
+    return d.tz_localize("UTC") if d.tz is None else d
+
+
+def _drivers(omni5: pd.DataFrame, at: datetime) -> list[str]:
+    row = omni5.loc[: pd.Timestamp(at)].iloc[-1]
+    return [f"Bz {row.bz_gsm_nt:.0f} nT", f"solar wind {row.speed_kms:.0f} km/s"]
+
+
+def _report(
+    storm: str, tz: str, s: dict, ticks: list[Tick], events: list[AlertEvent], omni5, cfg
+) -> str:
+    lines = [f"# Replay: {storm} (dry run, nothing sent)", "", "## Summary", ""]
+    lines += [f"- {k}: {v}" for k, v in s.items()]
+    lines += ["", "## Messages", ""]
+    for e in events:
+        for persona in ("aurora", "gnss"):
+            body = render(e, persona, tz, _drivers(omni5, e.issued_at), cfg)
+            lines += [f"### {e.level} / {persona} / {e.issued_at:%Y-%m-%d %H:%M} UTC", "", body, ""]
+    lines += [
+        "## Hourly",
+        "",
+        "| UTC | observed Kp | P(>=thr) | stale | level |",
+        "|---|---|---|---|---|",
+    ]
+    for k in (k for k in ticks if k.t.minute == 0):
+        kp = "" if k.observed_kp is None else f"{k.observed_kp:.2f}"
+        lines.append(f"| {k.t:%m-%d %H:%M} | {kp} | {k.p:.2f} | {k.stale} | {k.level} |")
+    return "\n".join(lines) + "\n"
+
+
+def main(config: str, storm: str, pad_days: int = 2, tz: str = "Asia/Kolkata") -> int:
     cfg = load_cfg(config)
-    storm = next(s for s in load_cfg(ROOT / cfg["holdout"])["storms"] if s["id"] == storm_id)
-    X, _ = build(cfg)
-    a = pd.Timestamp(storm["start"], tz="UTC") - pd.Timedelta(days=1)
-    b = pd.Timestamp(storm["end"], tz="UTC") + pd.Timedelta(days=3)
-    X = X.loc[a:b]
+    hold = load_cfg(ROOT / cfg["holdout"])
+    s = next(x for x in hold["storms"] if x["id"] == storm)
+    omni5 = pd.read_parquet(ROOT / cfg["omni_parquet"])
+    kp3h = pd.read_parquet(ROOT / cfg["kp_parquet"])["kp"]
+    omni5.index = _utc(omni5.index)
+    kp3h.index = _utc(kp3h.index)
     models = {
         h: registry.load(ROOT / cfg["artefact_dir"] / f"stage2_h{h}.joblib")[0] for h in HORIZONS_H
     }
-    events = replay(X, models)
-    print(f"{storm_id}: {len(X)} cycles from {a:%Y-%m-%d %H:%M} to {b:%Y-%m-%d %H:%M} UTC")
-    for e in events:
-        kp = "n/a" if e.observed_kp is None else f"{e.observed_kp:.2f}"
-        print(
-            f"{e.issued_at:%Y-%m-%d %H:%M} UTC  {e.level.value.upper():9s} p={e.p_exceed:.2f}  Kp={kp}"
-        )
-    print("sequence:", " -> ".join(e.level.value.upper() for e in events) or "(no alerts)")
+    pad = pd.Timedelta(days=pad_days)
+    start = pd.Timestamp(s["start"], tz="UTC") - pad
+    end = pd.Timestamp(s["end"], tz="UTC") + pd.Timedelta(days=1) + pad
+    ticks, events = replay(omni5, kp3h, start, end, models)
+    summary = summarise(ticks, events, kp3h)
+    out = ROOT / "docs" / "reports" / f"replay-{storm}.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(_report(storm, tz, summary, ticks, events, omni5, DEFAULT_CFG))
+    print(f"{storm}: {[(str(e.level), f'{e.issued_at:%m-%d %H:%M}') for e in events]} -> {out}")
+    return 0 if summary["sequence_ok"] else 1
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--storm", required=True)
     ap.add_argument("--config", default="ml/configs/stage2.yaml")
-    args = ap.parse_args()
-    main(args.storm, args.config)
+    ap.add_argument("--storm", default="2024-05-gannon")
+    ap.add_argument("--pad-days", type=int, default=2)
+    ap.add_argument("--tz", default="Asia/Kolkata")
+    a = ap.parse_args()
+    raise SystemExit(main(a.config, a.storm, a.pad_days, a.tz))

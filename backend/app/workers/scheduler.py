@@ -40,6 +40,14 @@ def run_forecast_cycle(sw_1m: pd.DataFrame, kp3h: pd.Series, now: datetime, mode
     """
     last = pd.Timestamp(sw_1m.index.max()).to_pydatetime() if len(sw_1m) else None
     df5 = range_filter(shift_to_bowshock(sw_1m)).resample("5min").mean()
+    return forecast_from_5min(df5, kp3h, now, last, models)
+
+
+def forecast_from_5min(
+    df5: pd.DataFrame, kp3h: pd.Series, now: datetime, last: datetime | None, models: dict
+) -> dict:
+    """Features + predict on a 5-min frame already at the bow shock (also used by ml/backtest.py,
+    where OMNI is pre-shifted: never shift twice)."""
     t = pd.DatetimeIndex([pd.Timestamp(now).floor("5min")])
     X = trailing_features(df5).reindex(t).assign(kp_last=kp_last(t, kp3h).to_numpy())
     horizons = []
