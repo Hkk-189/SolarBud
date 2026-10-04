@@ -46,3 +46,13 @@ async def fetch_json(
             log.warning("fetch failed", extra={"url": url, "attempt": i + 1, "err": str(e)})
             await asyncio.sleep(backoff_s * 2**i)
     return None
+
+
+def parse_swpc_kp(records: list[dict]) -> pd.Series:
+    """SWPC planetary Kp feed (dict records: time_tag = bin start, Kp) -> Series indexed by UTC."""
+    if not records:
+        return pd.Series([], index=pd.DatetimeIndex([], tz="UTC", name="time"), name="kp", dtype=float)
+    df = pd.DataFrame(records)
+    idx = pd.DatetimeIndex(pd.to_datetime(df["time_tag"], utc=True), name="time")
+    kp = pd.to_numeric(df["Kp"], errors="coerce")
+    return pd.Series(kp.to_numpy(), index=idx, name="kp").sort_index()
