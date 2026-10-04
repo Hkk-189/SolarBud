@@ -22,12 +22,21 @@ def fc(q, i=0, stale=False):
     )
 
 
-def run(cycles, state=AlertState):
+# Probability gap (p_clear = 0.3). thr = 14/3 = 4.6667 throughout:
+#   MID  q=(4.0, 4.5, 5.5): q1 < thr <= q2 -> (thr - q1)/(q2 - q1) = 0.1667/1.0
+#        -> cdf = 0.5 + 0.4*0.1667 = 0.5667 -> P = 0.4333
+#        (above p_clear 0.3, at or below p_threshold 0.5)
+#   NEAR q=(4.0, 4.8, 5.5): q0 < thr <= q1 -> (thr - q0)/(q1 - q0) = 0.6667/0.8 = 0.8333
+#        -> cdf = 0.1 + 0.4*0.8333 = 0.4333 -> P = 0.5667 (just above p_threshold)
+MID, NEAR = (4.0, 4.5, 5.5), (4.0, 4.8, 5.5)
+
+
+def run(cycles, state=AlertState, cfg=CFG):
     """cycles: list of (quantiles, stale, observed_kp). Returns (state, event levels per cycle)."""
     state = state() if callable(state) else state
     out = []
     for i, (q, stale, obs) in enumerate(cycles):
-        state, ev = step(state, fc(q, i, stale), obs, CFG)
+        state, ev = step(state, fc(q, i, stale), obs, cfg)
         out.append([e.level for e in ev])
     return state, out
 
@@ -136,5 +145,79 @@ def test_all_clear_is_emitted_once_and_can_reescalate():
     state, _ = run([(HIGH, False, 5.33)])
     state, ev = run([(LOW, False, 3.0)] * 6, state)
     assert [x for e in ev for x in e] == [Level.ALL_CLEAR]
+    # the 12-cycle cooldown must elapse first: ALL_CLEAR came on LOW cycle 3, so 3 of 12 are used
+    state, _ = run([(LOW, False, 3.0)] * 9, state)
     _, ev = run([(HIGH, False, 3.0)] * 2, state)
     assert ev == [[], [Level.WARNING]]
+
+
+def test_mid_band_does_not_deescalate_warning():
+    state, _ = run([(HIGH, False, None)] * 2)
+    state, ev = run([(MID, False, None)] * 6, state)
+    assert ev == [[]] * 6 and state.level == Level.WARNING
+
+
+def test_mid_band_neither_escalates_nor_counts_up():
+    state, ev = run([(NEAR, False, None), (MID, False, None), (NEAR, False, None)])
+    assert ev == [[], [], []] and state.level == Level.NONE  # mid breaks the high streak
+
+
+def test_mid_band_holds_the_deescalation_count():
+    # LOW LOW MID LOW: mid neither resets nor advances, so the 3rd low cycle clears
+    state, _ = run([(HIGH, False, None)] * 2)
+    state, ev = run([(LOW, False, None)] * 2 + [(MID, False, None), (LOW, False, None)], state)
+    assert ev == [[], [], [], [Level.ALL_CLEAR]]
+
+
+def test_runs_around_threshold_do_not_flap():
+    # Gannon pattern: p wanders 0.57 (NEAR) <-> 0.43 (MID) in runs. Old rules: WARNING/ALL_CLEAR pairs.
+    cycles = ([(NEAR, False, None)] * 2 + [(MID, False, None)] * 3) * 3
+    state, ev = run(cycles)
+    assert [x for e in ev for x in e] == [Level.WARNING] and state.level == Level.WARNING
+
+
+def test_alternating_around_threshold_emits_one_warning():
+    _, ev = run(
+        [(NEAR, False, None), (NEAR, False, None)] + [(MID, False, None), (NEAR, False, None)] * 5
+    )
+    assert [x for e in ev for x in e] == [Level.WARNING]
+
+
+COOL = AlertConfig(cooldown_cycles=4)
+
+
+def _cleared():
+    state, _ = run([(HIGH, False, None)] * 2, cfg=COOL)
+    state, ev = run([(LOW, False, None)] * 3, state, COOL)
+    assert ev[-1] == [Level.ALL_CLEAR]
+    return state
+
+
+def test_cooldown_blocks_rewarning_then_allows_it():
+    state, ev = run([(HIGH, False, None)] * 4, _cleared(), COOL)  # 4 blocked cycles
+    assert ev == [[]] * 4 and state.level == Level.ALL_CLEAR
+    state, ev = run([(HIGH, False, None)] * 2, state, COOL)  # streak starts after cooldown
+    assert ev == [[], [Level.WARNING]]
+
+
+def test_cooldown_counts_stale_cycles_but_never_escalates_on_them():
+    _, ev = run([(HIGH, True, None)] * 4 + [(HIGH, False, None)] * 2, _cleared(), COOL)
+    assert ev == [[]] * 5 + [[Level.WARNING]]
+
+
+def test_active_fires_during_cooldown():
+    state, ev = run([(LOW, False, 5.0)], _cleared(), COOL)
+    assert ev == [[Level.ACTIVE]] and state.level == Level.ACTIVE
+
+
+def test_cooldown_zero_restores_immediate_rewarning():
+    cfg = AlertConfig(cooldown_cycles=0)
+    state, _ = run([(HIGH, False, None)] * 2 + [(LOW, False, None)] * 3, cfg=cfg)
+    _, ev = run([(HIGH, False, None)] * 2, state, cfg)
+    assert ev == [[], [Level.WARNING]]
+
+
+def test_stale_cycles_still_hold_warning_with_mid_and_low():
+    state, _ = run([(HIGH, False, None)] * 2)
+    state, ev = run([(MID, True, None), (LOW, True, None)] * 3, state)
+    assert ev == [[]] * 6 and state.level == Level.WARNING
