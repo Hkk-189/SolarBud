@@ -1,0 +1,22 @@
+from pathlib import Path
+
+import pandas as pd
+import yaml
+
+from app.features.targets import kp_last, kp_target
+from app.features.windows import trailing_features
+
+ROOT = Path(__file__).parents[1]
+
+
+def load_cfg(path: str | Path) -> dict:
+    return yaml.safe_load(Path(path).read_text())
+
+
+def build(cfg: dict) -> tuple[pd.DataFrame, dict[int, pd.Series]]:
+    """Feature frame (OMNI is already bow-shock shifted: no propagation) + Kp target per horizon."""
+    omni = pd.read_parquet(ROOT / cfg["omni_parquet"])
+    kp3h = pd.read_parquet(ROOT / cfg["kp_parquet"])["kp"]
+    X = trailing_features(omni).assign(kp_last=kp_last(omni.index, kp3h))
+    y = {h: kp_target(X.index, kp3h, h) for h in cfg["horizons"]}
+    return X, y
