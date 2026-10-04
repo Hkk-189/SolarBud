@@ -4,7 +4,11 @@ holdout: ml/configs/holdout.yaml
 omni_parquet: data/processed/omni_5min.parquet
 kp_parquet: data/processed/kp.parquet
 artefact_dir: artefacts
+# Upweight rows whose target is Kp >= 5- (G1) 6x. Chosen on the 2022-24 validation block:
+# the largest weight that keeps +3 h RMSE skill >= 0.15. See docs/reports/stage2-weighting-experiment.md
+event_weight: {kp5: 6}
 lgbm:
   n_estimators: 400
   learning_rate: 0.05
   num_leaves: 31
+  n_jobs: 3
