@@ -19,7 +19,7 @@ def range_filter(df: pd.DataFrame) -> pd.DataFrame:
     for col, (lo, hi) in VALID_RANGES.items():
         if col in out:
             out[col] = out[col].where(out[col].between(lo, hi))
-    for col in [c for c in out if c.endswith("_nt")]:
+    for col in [c for c in out if str(c).endswith("_nt")]:
         out[col] = out[col].where(out[col].abs() <= B_MAX_NT)
     return out
 

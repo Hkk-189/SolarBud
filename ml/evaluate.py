@@ -4,6 +4,7 @@ import argparse
 from datetime import UTC, datetime
 
 import numpy as np
+import pandas as pd
 
 from app.models import registry
 from app.models.stage2.baselines import persistence
@@ -43,7 +44,7 @@ def _rmse(a, b) -> float:
 def main(config: str) -> None:
     cfg = load_cfg(config)
     X, ys = build(cfg)
-    test = split_masks(X.index, load_cfg(ROOT / cfg["holdout"]))["test"]
+    test = split_masks(pd.DatetimeIndex(X.index), load_cfg(ROOT / cfg["holdout"]))["test"]
     rows, lines = [], []
     for h, y in ys.items():
         ok = test & y.notna().to_numpy() & X["kp_last"].notna().to_numpy()
@@ -51,20 +52,39 @@ def main(config: str) -> None:
         model, _ = registry.load(ROOT / cfg["artefact_dir"] / f"stage2_h{h}.joblib")
         newell, _ = registry.load(ROOT / cfg["artefact_dir"] / f"newell_h{h}.joblib")
         q = model.predict(Xt)
-        preds = {"persistence": persistence(Xt["kp_last"]),
-                 "newell-kp": newell.predict(Xt["newell_mean_3h"]), "lgbm-p50": q[:, 1]}
+        preds = {
+            "persistence": persistence(Xt["kp_last"]),
+            "newell-kp": newell.predict(Xt["newell_mean_3h"]),
+            "lgbm-p50": q[:, 1],
+        }
         ref = _rmse(preds["persistence"], yt)
         for name, p in preds.items():
             ev = {k: contingency(yt, p, t) for k, t in THRESHOLDS.items()}
-            rows.append((h, name, _rmse(p, yt), float(np.mean(np.abs(p - yt))),
-                         skill(_rmse(p, yt), ref), ev["Kp>=5"]["TSS"], ev["Kp>=5"]["HSS"],
-                         ev["Kp>=7"]["TSS"]))
-        lines.append(f"- +{h} h: n={len(yt)}, 80% interval coverage = {coverage(yt, q[:, 0], q[:, 2]):.2f}")
+            rows.append(
+                (
+                    h,
+                    name,
+                    _rmse(p, yt),
+                    float(np.mean(np.abs(p - yt))),
+                    skill(_rmse(p, yt), ref),
+                    ev["Kp>=5"]["TSS"],
+                    ev["Kp>=5"]["HSS"],
+                    ev["Kp>=7"]["TSS"],
+                )
+            )
+        lines.append(
+            f"- +{h} h: n={len(yt)}, 80% interval coverage = {coverage(yt, q[:, 0], q[:, 2]):.2f}"
+        )
     head = "| h | model | RMSE | MAE | skill vs persistence | TSS Kp>=5 | HSS Kp>=5 | TSS Kp>=7 |\n|---|---|---|---|---|---|---|---|\n"
     table = head + "\n".join(
         f"| +{r[0]} | {r[1]} | {r[2]:.3f} | {r[3]:.3f} | {r[4]:+.3f} | {r[5]:.2f} | {r[6]:.2f} | {r[7]:.2f} |"
-        for r in rows)
-    text = f"# Stage 2 model card (LightGBM quantile)\n\nGenerated {datetime.now(UTC):%Y-%m-%d} on the test split (held-out storms + 2025 onward).\n\n{table}\n\n" + "\n".join(lines) + "\n"
+        for r in rows
+    )
+    text = (
+        f"# Stage 2 model card (LightGBM quantile)\n\nGenerated {datetime.now(UTC):%Y-%m-%d} on the test split (held-out storms + 2025 onward).\n\n{table}\n\n"
+        + "\n".join(lines)
+        + "\n"
+    )
     print(text)
     (ROOT / "docs" / "model-cards").mkdir(parents=True, exist_ok=True)
     (ROOT / "docs" / "model-cards" / "stage2-lgbm.md").write_text(text, encoding="utf-8")

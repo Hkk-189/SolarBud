@@ -4,8 +4,9 @@ Revision ID: 0001
 """
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0001"
 down_revision = None
@@ -17,8 +18,10 @@ def upgrade() -> None:
         "solar_wind_1m",
         sa.Column("time", ts, primary_key=True),
         sa.Column("source", sa.String(32)),
-        *[sa.Column(c, sa.Float) for c in (
-            "density_cm3", "speed_kms", "bx_gsm_nt", "by_gsm_nt", "bz_gsm_nt", "bt_nt")],
+        *[
+            sa.Column(c, sa.Float)
+            for c in ("density_cm3", "speed_kms", "bx_gsm_nt", "by_gsm_nt", "bz_gsm_nt", "bt_nt")
+        ],
     )
     op.create_table(
         "kp_3h",

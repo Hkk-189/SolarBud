@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from app.workers.scheduler import run_forecast_cycle
 
 
@@ -13,8 +14,14 @@ class Fake:
 def _sw(end):
     idx = pd.date_range(end=end, periods=8 * 60, freq="1min", tz="UTC")
     return pd.DataFrame(
-        {"speed_kms": 500.0, "density_cm3": 5.0, "bx_gsm_nt": 0.0, "by_gsm_nt": 0.0,
-         "bz_gsm_nt": -10.0, "bt_nt": 10.0},
+        {
+            "speed_kms": 500.0,
+            "density_cm3": 5.0,
+            "bx_gsm_nt": 0.0,
+            "by_gsm_nt": 0.0,
+            "bz_gsm_nt": -10.0,
+            "bt_nt": 10.0,
+        },
         index=idx,
     )
 

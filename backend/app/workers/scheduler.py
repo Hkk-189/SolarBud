@@ -4,6 +4,7 @@ import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 import httpx
 import pandas as pd
@@ -26,6 +27,10 @@ log = logging.getLogger(__name__)
 SW_COLS = ["density_cm3", "speed_kms", "bx_gsm_nt", "by_gsm_nt", "bz_gsm_nt", "bt_nt"]
 
 
+def _dt(t: object) -> datetime:
+    return cast(pd.Timestamp, t).to_pydatetime()
+
+
 def run_forecast_cycle(sw_1m: pd.DataFrame, kp3h: pd.Series, now: datetime, models: dict) -> dict:
     """Pure forecast step (no I/O). Stale L1 data is flagged, never silently used as fresh.
 
@@ -33,7 +38,7 @@ def run_forecast_cycle(sw_1m: pd.DataFrame, kp3h: pd.Series, now: datetime, mode
     in-flight L1 data (15-90 min) is dropped. Using it adds lead time but needs training on
     that horizon semantics.
     """
-    last = sw_1m.index.max().to_pydatetime() if len(sw_1m) else None
+    last = pd.Timestamp(sw_1m.index.max()).to_pydatetime() if len(sw_1m) else None
     df5 = range_filter(shift_to_bowshock(sw_1m)).resample("5min").mean()
     t = pd.DatetimeIndex([pd.Timestamp(now).floor("5min")])
     X = trailing_features(df5).reindex(t).assign(kp_last=kp_last(t, kp3h).to_numpy())
@@ -42,8 +47,12 @@ def run_forecast_cycle(sw_1m: pd.DataFrame, kp3h: pd.Series, now: datetime, mode
         cols = getattr(models[h], "columns", None) or list(X.columns)  # train/serve parity
         p10, p50, p90 = (float(v) for v in models[h].predict(X.reindex(columns=cols))[0])
         horizons.append({"horizon_h": h, "p10": p10, "p50": p50, "p90": p90})
-    return {"issued_at": now, "model_version": models[1].version,
-            "data_stale": is_stale(last, now), "horizons": horizons}
+    return {
+        "issued_at": now,
+        "model_version": models[1].version,
+        "data_stale": is_stale(last, now),
+        "horizons": horizons,
+    }
 
 
 async def ingest_once(client: httpx.AsyncClient) -> None:
@@ -57,37 +66,54 @@ async def ingest_once(client: httpx.AsyncClient) -> None:
             pw, pm = parse_rtsw(wind, PLASMA_COLUMNS), parse_rtsw(mag, MAG_COLUMNS)
             df = pw.drop(columns="source").join(pm.drop(columns="source"), how="outer")
             df["source"] = pw["source"].reindex(df.index).fillna(pm["source"].reindex(df.index))
-            rows = [{"time": t.to_pydatetime(), "source": r.source,
-                     **{c: (None if pd.isna(r[c]) else float(r[c])) for c in SW_COLS}}
-                    for t, r in df.iterrows()]
+            rows = [
+                {
+                    "time": _dt(t),
+                    "source": r.source,
+                    **{c: (None if pd.isna(r[c]) else float(r[c])) for c in SW_COLS},
+                }
+                for t, r in df.iterrows()
+            ]
             if rows:
                 stmt = insert(SolarWind1m).values(rows)
-                await s.execute(stmt.on_conflict_do_update(
-                    index_elements=["time"],
-                    set_={c: getattr(stmt.excluded, c) for c in [*SW_COLS, "source"]}))
+                await s.execute(
+                    stmt.on_conflict_do_update(
+                        index_elements=["time"],
+                        set_={c: getattr(stmt.excluded, c) for c in [*SW_COLS, "source"]},
+                    )
+                )
         else:
             log.warning("solar wind fetch failed; data will go stale")
         if kp:
             ks = parse_swpc_kp(kp).dropna()
-            rows = [{"time": t.to_pydatetime(), "kp": float(v), "source": "swpc"}
-                    for t, v in ks.items()]
+            rows = [{"time": _dt(t), "kp": float(v), "source": "swpc"} for t, v in ks.items()]
             if rows:
                 stmt = insert(Kp3h).values(rows)
-                await s.execute(stmt.on_conflict_do_update(
-                    index_elements=["time"], set_={"kp": stmt.excluded.kp}))
+                await s.execute(
+                    stmt.on_conflict_do_update(
+                        index_elements=["time"], set_={"kp": stmt.excluded.kp}
+                    )
+                )
         await s.commit()
 
 
 async def forecast_once(models: dict) -> None:
     now = datetime.now(UTC)
     async with SessionLocal() as s:
-        sw = (await s.execute(select(SolarWind1m).where(
-            SolarWind1m.time >= now - timedelta(hours=8)).order_by(SolarWind1m.time))).scalars()
+        sw = (
+            await s.execute(
+                select(SolarWind1m)
+                .where(SolarWind1m.time >= now - timedelta(hours=8))
+                .order_by(SolarWind1m.time)
+            )
+        ).scalars()
         sw_df = pd.DataFrame([{"time": r.time, **{c: getattr(r, c) for c in SW_COLS}} for r in sw])
-        sw_df = (sw_df.set_index("time") if len(sw_df)
-                 else pd.DataFrame(columns=SW_COLS, index=pd.DatetimeIndex([], tz="UTC")))
-        kp = (await s.execute(select(Kp3h).where(
-            Kp3h.time >= now - timedelta(days=2)))).scalars()
+        sw_df = (
+            sw_df.set_index("time")
+            if len(sw_df)
+            else pd.DataFrame(columns=SW_COLS, index=pd.DatetimeIndex([], tz="UTC"))
+        )
+        kp = (await s.execute(select(Kp3h).where(Kp3h.time >= now - timedelta(days=2)))).scalars()
         kp3h = pd.Series({r.time: r.kp for r in kp}, dtype=float)
         kp3h.index = pd.DatetimeIndex(kp3h.index, tz="UTC") if len(kp3h) else kp3h.index
         out = run_forecast_cycle(sw_df, kp3h, now, models)
@@ -102,12 +128,14 @@ def _safe(coro_fn, name: str):
             await coro_fn()
         except Exception:
             log.exception("job %s failed", name)
+
     return job
 
 
 async def main() -> None:
-    models = {h: registry.load(Path(settings.model_dir) / f"stage2_h{h}.joblib")[0]
-              for h in HORIZONS_H}
+    models = {
+        h: registry.load(Path(settings.model_dir) / f"stage2_h{h}.joblib")[0] for h in HORIZONS_H
+    }
     async with httpx.AsyncClient() as client:
         sched = AsyncIOScheduler(timezone="UTC")
         sched.add_job(_safe(lambda: ingest_once(client), "ingest"), "interval", seconds=60)

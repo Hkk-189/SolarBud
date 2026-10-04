@@ -15,7 +15,10 @@ log = logging.getLogger(__name__)
 
 PLASMA_COLUMNS = {"proton_density": "density_cm3", "proton_speed": "speed_kms"}
 MAG_COLUMNS = {
-    "bx_gsm": "bx_gsm_nt", "by_gsm": "by_gsm_nt", "bz_gsm": "bz_gsm_nt", "bt": "bt_nt",
+    "bx_gsm": "bx_gsm_nt",
+    "by_gsm": "by_gsm_nt",
+    "bz_gsm": "bz_gsm_nt",
+    "bt": "bt_nt",
 }
 
 
@@ -51,7 +54,9 @@ async def fetch_json(
 def parse_swpc_kp(records: list[dict]) -> pd.Series:
     """SWPC planetary Kp feed (dict records: time_tag = bin start, Kp) -> Series indexed by UTC."""
     if not records:
-        return pd.Series([], index=pd.DatetimeIndex([], tz="UTC", name="time"), name="kp", dtype=float)
+        return pd.Series(
+            [], index=pd.DatetimeIndex([], tz="UTC", name="time"), name="kp", dtype=float
+        )
     df = pd.DataFrame(records)
     idx = pd.DatetimeIndex(pd.to_datetime(df["time_tag"], utc=True), name="time")
     kp = pd.to_numeric(df["Kp"], errors="coerce")

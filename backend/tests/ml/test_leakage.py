@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from app.features.targets import kp_last, kp_target
 from app.features.windows import trailing_features
 
@@ -8,8 +9,12 @@ def _df5(n=200, seed=0):
     idx = pd.date_range("2024-05-10", periods=n, freq="5min", tz="UTC")
     r = np.random.default_rng(seed)
     return pd.DataFrame(
-        {"speed_kms": r.uniform(300, 800, n), "by_gsm_nt": r.normal(0, 5, n),
-         "bz_gsm_nt": r.normal(0, 5, n), "density_cm3": r.uniform(1, 20, n)},
+        {
+            "speed_kms": r.uniform(300, 800, n),
+            "by_gsm_nt": r.normal(0, 5, n),
+            "bz_gsm_nt": r.normal(0, 5, n),
+            "density_cm3": r.uniform(1, 20, n),
+        },
         index=idx,
     )
 

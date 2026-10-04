@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from app.models import registry
 from app.models.stage2.baselines import NewellKp, persistence
 from app.models.stage2.lgbm import QuantileKp
@@ -32,7 +33,12 @@ def test_quantile_shape_order_determinism():
 def test_registry_round_trip(tmp_path):
     X, y = _xy()
     m = QuantileKp(seed=0).fit(X, y)
-    meta = {"config": {}, "data_range": ["1995-01-01", "2021-12-31"], "git_sha": "abc", "metrics": {}}
+    meta = {
+        "config": {},
+        "data_range": ["1995-01-01", "2021-12-31"],
+        "git_sha": "abc",
+        "metrics": {},
+    }
     registry.save(m, meta, tmp_path / "m.joblib")
     m2, meta2 = registry.load(tmp_path / "m.joblib")
     np.testing.assert_array_equal(m.predict(X), m2.predict(X))

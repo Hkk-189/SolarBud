@@ -17,6 +17,7 @@ def build(cfg: dict) -> tuple[pd.DataFrame, dict[int, pd.Series]]:
     """Feature frame (OMNI is already bow-shock shifted: no propagation) + Kp target per horizon."""
     omni = pd.read_parquet(ROOT / cfg["omni_parquet"])
     kp3h = pd.read_parquet(ROOT / cfg["kp_parquet"])["kp"]
-    X = trailing_features(omni).assign(kp_last=kp_last(omni.index, kp3h))
-    y = {h: kp_target(X.index, kp3h, h) for h in cfg["horizons"]}
+    idx = pd.DatetimeIndex(omni.index)
+    X = trailing_features(omni).assign(kp_last=kp_last(idx, kp3h))
+    y = {h: kp_target(idx, kp3h, h) for h in cfg["horizons"]}
     return X, y

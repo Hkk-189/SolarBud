@@ -12,8 +12,15 @@ class QuantileKp:
     def __init__(self, seed: int = 0, **params):
         self.columns: list[str] = []
         self.models = [
-            lgb.LGBMRegressor(objective="quantile", alpha=q, random_state=seed,
-                              deterministic=True, n_jobs=1, verbose=-1, **params)
+            lgb.LGBMRegressor(
+                objective="quantile",
+                alpha=q,
+                random_state=seed,
+                deterministic=True,
+                n_jobs=1,
+                verbose=-1,
+                **params,
+            )
             for q in QUANTILES
         ]
 
@@ -26,4 +33,4 @@ class QuantileKp:
     def predict(self, X) -> np.ndarray:
         X = X.reindex(columns=self.columns) if self.columns else X
         # sort per row: independently trained quantiles can cross
-        return np.sort(np.column_stack([m.predict(X) for m in self.models]), axis=1)
+        return np.sort(np.column_stack([np.asarray(m.predict(X)) for m in self.models]), axis=1)

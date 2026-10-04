@@ -4,6 +4,7 @@ from pathlib import Path
 import httpx
 import numpy as np
 import pandas as pd
+
 from app.ingest.swpc import PLASMA_COLUMNS, fetch_json, parse_rtsw, parse_swpc_kp
 
 FIX = Path(__file__).parents[1] / "fixtures"
@@ -22,8 +23,15 @@ def test_parse_plasma_active_only_sorted_utc_nulls():
 
 def test_parse_empty_or_all_inactive_is_empty():  # Review Focus 1
     assert parse_rtsw([], PLASMA_COLUMNS).empty
-    inactive = [{"time_tag": "2024-05-10T17:00:00", "active": False, "source": "ACE",
-                 "proton_speed": 400.0, "proton_density": 5.0}]
+    inactive = [
+        {
+            "time_tag": "2024-05-10T17:00:00",
+            "active": False,
+            "source": "ACE",
+            "proton_speed": 400.0,
+            "proton_density": 5.0,
+        }
+    ]
     df = parse_rtsw(inactive, PLASMA_COLUMNS)
     assert df.empty and list(df.columns) == COLS
 
@@ -48,8 +56,10 @@ async def test_fetch_json_ok():
 
 
 def test_parse_swpc_kp():
-    recs = [{"time_tag": "2026-09-27T03:00:00", "Kp": 3.33, "a_running": 18, "station_count": 8},
-            {"time_tag": "2026-09-27T00:00:00", "Kp": 4.0, "a_running": 27, "station_count": 8}]
+    recs = [
+        {"time_tag": "2026-09-27T03:00:00", "Kp": 3.33, "a_running": 18, "station_count": 8},
+        {"time_tag": "2026-09-27T00:00:00", "Kp": 4.0, "a_running": 27, "station_count": 8},
+    ]
     s = parse_swpc_kp(recs)
     assert s.index[0] == pd.Timestamp("2026-09-27 00:00", tz="UTC") and s.tolist() == [4.0, 3.33]
     assert parse_swpc_kp([]).empty

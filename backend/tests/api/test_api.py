@@ -1,8 +1,9 @@
 from datetime import UTC, datetime
 
+from fastapi.testclient import TestClient
+
 from app.api.v1 import deps
 from app.main import create_app
-from fastapi.testclient import TestClient
 
 FC = {
     "issued_at": datetime(2024, 5, 10, 18, 0, tzinfo=UTC),
