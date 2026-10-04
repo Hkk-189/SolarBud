@@ -3,6 +3,16 @@
 Decisions (user-approved defaults): ACTIVE is immediate and ignores stale L1 (observed Kp is not
 L1); a stale cycle breaks an escalation streak but only holds de-escalation; one event per level
 change. WATCH needs Stage 1 and is not produced here.
+
+Anti-flapping (P hovers near p_threshold): three bands per fresh cycle.
+  high: p > p_threshold      low: p < p_clear      mid: p_clear <= p <= p_threshold
+- Escalation counts only high cycles; any non-high cycle (mid, low, stale) resets `up`.
+- De-escalation counts only low cycles. A mid or stale cycle HOLDS `down` (no increment, no reset);
+  only a high cycle resets it. So a WARNING is cleared by 3 low cycles, not merely 3 "not high".
+- Cooldown: ALL_CLEAR starts `cooldown_cycles` of no-WARNING. While `cooldown > 0` the `up` streak
+  is held at 0 (each cycle, fresh or stale, burns one), so a new WARNING needs the cooldown plus
+  `up_cycles` fresh high cycles. Observed Kp -> ACTIVE ignores the cooldown (a real storm is never
+  suppressed). ACTIVE ending with a high forecast still goes to WARNING (not a re-warn after clear).
 """
 
 from dataclasses import dataclass, replace
@@ -28,8 +38,10 @@ class Level(StrEnum):
 class AlertConfig:
     g_level: int = 1
     p_threshold: float = 0.5
+    p_clear: float = 0.3  # a cycle counts toward de-escalation only below this
     up_cycles: int = 2
     down_cycles: int = 3
+    cooldown_cycles: int = 12  # 1 h at the 5-minute cadence: no new WARNING right after ALL_CLEAR
 
     @property
     def kp_threshold(self) -> float:
@@ -41,6 +53,7 @@ class AlertState:
     level: Level = Level.NONE
     up: int = 0  # consecutive fresh high cycles
     down: int = 0  # consecutive fresh low cycles (WARNING) / observed-Kp-below cycles (ACTIVE)
+    cooldown: int = 0  # cycles left after ALL_CLEAR during which WARNING is blocked
 
 
 @dataclass(frozen=True)
@@ -67,11 +80,17 @@ def step(
 ) -> tuple[AlertState, list[AlertEvent]]:
     p = _p(forecast, cfg.kp_threshold)
     stale = forecast.data_stale
-    high, low = not stale and p > cfg.p_threshold, not stale and p <= cfg.p_threshold
+    high, low = not stale and p > cfg.p_threshold, not stale and p < cfg.p_clear
+    cooling = state.cooldown > 0
+    if cooling:
+        state = replace(state, cooldown=state.cooldown - 1)
     active_now = observed_kp is not None and observed_kp >= cfg.kp_threshold - KP_TOL
 
     def to(level: Level) -> tuple[AlertState, list[AlertEvent]]:
-        return AlertState(level), [AlertEvent(level, forecast.issued_at, p, observed_kp)]
+        cd = cfg.cooldown_cycles if level == Level.ALL_CLEAR else 0
+        return AlertState(level, cooldown=cd), [
+            AlertEvent(level, forecast.issued_at, p, observed_kp)
+        ]
 
     if active_now:
         return (
@@ -92,8 +111,8 @@ def step(
             return (
                 to(Level.ALL_CLEAR) if down >= cfg.down_cycles else (replace(state, down=down), [])
             )
-        return state, []  # stale: hold
-    up = state.up + 1 if high else 0
+        return state, []  # stale or mid: hold
+    up = state.up + 1 if high and not cooling else 0
     if up >= cfg.up_cycles:
         return to(Level.WARNING)
     return replace(state, up=up, down=0), []
