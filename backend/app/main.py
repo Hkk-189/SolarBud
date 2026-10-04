@@ -4,7 +4,7 @@ from app.api.v1 import forecast, solar_wind
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="SolarWatch API", version="0.1.0")
+    app = FastAPI(title="SolarBud API", version="0.1.0")
     v1 = APIRouter(prefix="/v1")
     v1.include_router(forecast.router)
     v1.include_router(solar_wind.router)

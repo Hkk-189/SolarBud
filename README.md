@@ -1,4 +1,4 @@
-# SolarWatch
+# SolarBud
 
 Geomagnetic storm forecasting and alerts. Not an official forecast — see https://www.swpc.noaa.gov.
 
