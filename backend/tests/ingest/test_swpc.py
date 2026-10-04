@@ -4,24 +4,28 @@ from pathlib import Path
 import httpx
 import numpy as np
 import pandas as pd
-from app.ingest.swpc import PLASMA_COLUMNS, fetch_json, parse_swpc_table
+from app.ingest.swpc import PLASMA_COLUMNS, fetch_json, parse_rtsw
 
 FIX = Path(__file__).parents[1] / "fixtures"
+COLS = ["density_cm3", "speed_kms", "source"]
 
 
-def test_parse_plasma_header_nulls_utc():
-    rows = json.loads((FIX / "swpc_plasma_small.json").read_text())
-    df = parse_swpc_table(rows, PLASMA_COLUMNS)
-    assert list(df.columns) == ["density_cm3", "speed_kms"]
-    assert str(df.index.tz) == "UTC"
+def test_parse_plasma_active_only_sorted_utc_nulls():
+    df = parse_rtsw(json.loads((FIX / "swpc_plasma_small.json").read_text()), PLASMA_COLUMNS)
+    assert list(df.columns) == COLS
+    assert str(df.index.tz) == "UTC" and df.index.is_monotonic_increasing and df.index.is_unique
     assert df.index[0] == pd.Timestamp("2024-05-10 17:00", tz="UTC")
+    assert len(df) == 3 and set(df.source) == {"SOLAR1"}  # inactive ACE row at 17:01 dropped
+    assert df.speed_kms.iloc[0] == 400.2 and df.speed_kms.iloc[1] == 401.0  # not the ACE 999.0
     assert np.isnan(df.density_cm3.iloc[1]) and np.isnan(df.speed_kms.iloc[2])
-    assert df.speed_kms.iloc[0] == 400.2
 
 
-def test_parse_header_only_is_empty():  # Review Focus 1
-    df = parse_swpc_table([["time_tag", "density", "speed", "temperature"]], PLASMA_COLUMNS)
-    assert df.empty and list(df.columns) == ["density_cm3", "speed_kms"]
+def test_parse_empty_or_all_inactive_is_empty():  # Review Focus 1
+    assert parse_rtsw([], PLASMA_COLUMNS).empty
+    inactive = [{"time_tag": "2024-05-10T17:00:00", "active": False, "source": "ACE",
+                 "proton_speed": 400.0, "proton_density": 5.0}]
+    df = parse_rtsw(inactive, PLASMA_COLUMNS)
+    assert df.empty and list(df.columns) == COLS
 
 
 async def test_fetch_json_never_raises_on_500():
@@ -38,6 +42,6 @@ async def test_fetch_json_never_raises_on_500():
 
 
 async def test_fetch_json_ok():
-    transport = httpx.MockTransport(lambda r: httpx.Response(200, json=[["a"]]))
+    transport = httpx.MockTransport(lambda r: httpx.Response(200, json=[{"a": 1}]))
     async with httpx.AsyncClient(transport=transport) as c:
-        assert await fetch_json(c, "https://x/y.json", backoff_s=0) == [["a"]]
+        assert await fetch_json(c, "https://x/y.json", backoff_s=0) == [{"a": 1}]
