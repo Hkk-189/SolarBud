@@ -38,6 +38,8 @@ CHUNK = pd.Timedelta(days=7)
 HOURS_PER_MONTH = 730.5
 EPISODE_GAP = pd.Timedelta(hours=24)  # Kp >= threshold bins closer than this are one storm
 LEAD_WINDOW = pd.Timedelta(hours=3)  # a WARNING must hold within this long before the onset bin
+KP_BIN = pd.Timedelta(hours=3)  # ACTIVE can fire only when the onset bin completes
+MISS_KINDS = ("late", "stale", "rose", "flat")
 HELD = {Level.WARNING, Level.ACTIVE}
 
 
@@ -49,6 +51,7 @@ class Score:
     false_warnings: int = 0
     events: int = 0
     leads: tuple[float, ...] = ()
+    miss_kinds: tuple[str, ...] = ()
 
     def __add__(self, o: "Score") -> "Score":
         return Score(
@@ -58,6 +61,7 @@ class Score:
             self.false_warnings + o.false_warnings,
             self.events + o.events,
             self.leads + o.leads,
+            self.miss_kinds + o.miss_kinds,
         )
 
     def per_month(self, name: str) -> float:
@@ -94,11 +98,32 @@ def model_key(models_dir: Path) -> str:
     return h.hexdigest()[:12]
 
 
+def _classify_miss(
+    times: pd.DatetimeIndex,
+    held: np.ndarray,
+    p: np.ndarray,
+    stale: np.ndarray,
+    onset: pd.Timestamp,
+    cfg: AlertConfig,
+) -> str:
+    """Why a storm onset had no WARNING in the LEAD_WINDOW before it (see MISS_KINDS)."""
+    if ((times > onset) & (times < onset + KP_BIN) & held).any():
+        return "late"
+    pre = (times >= onset - LEAD_WINDOW) & (times <= onset)
+    if stale[pre].mean() >= 0.5:
+        return "stale"
+    near = (times >= onset - LEAD_WINDOW) & (times < onset + KP_BIN) & ~stale
+    return "rose" if near.any() and p[near].max() > cfg.p_clear else "flat"
+
+
 def score(ticks: list[Tick], events: list[AlertEvent], kp3h: pd.Series, cfg: AlertConfig) -> Score:
     thr = cfg.kp_threshold - KP_TOL
     times = pd.DatetimeIndex([k.t for k in ticks])
     held = np.array([k.level in HELD for k in ticks])
+    p = np.array([k.p for k in ticks])
+    stale = np.array([k.stale for k in ticks])
     leads, missed, storms = [], 0, 0
+    kinds: list[str] = []
     for o in storm_onsets(kp3h, thr):
         if not times[0] + LEAD_WINDOW <= o <= times[-1]:
             continue
@@ -106,6 +131,7 @@ def score(ticks: list[Tick], events: list[AlertEvent], kp3h: pd.Series, cfg: Ale
         in_window = np.flatnonzero((times >= o - LEAD_WINDOW) & (times <= o) & held)
         if len(in_window) == 0:
             missed += 1
+            kinds.append(_classify_miss(times, held, p, stale, o, cfg))
             continue
         i = in_window[-1]
         while i > 0 and held[i - 1]:
@@ -120,6 +146,7 @@ def score(ticks: list[Tick], events: list[AlertEvent], kp3h: pd.Series, cfg: Ale
         ),
         events=len(events),
         leads=tuple(leads),
+        miss_kinds=tuple(kinds),
     )
 
 

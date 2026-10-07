@@ -27,12 +27,14 @@ def kp(days: int = 1, **bins: float) -> pd.Series:
     return s
 
 
-def ticks(held: dict[str, str]) -> list[Tick]:
+def ticks(held: dict[str, str], p=lambda t: 0.0, stale=lambda t: False) -> list[Tick]:
     """One day of 5-min ticks. held maps 'HH:MM' start -> 'HH:MM' end (exclusive) of a WARNING run."""
     out = []
     for t in pd.date_range(ts("00:00"), ts("23:55"), freq="5min"):
         warn = any(ts(a) <= t < ts(b) for a, b in held.items())
-        out.append(Tick(t.to_pydatetime(), 0.0, None, False, Level.WARNING if warn else Level.NONE))
+        out.append(
+            Tick(t.to_pydatetime(), p(t), None, stale(t), Level.WARNING if warn else Level.NONE)
+        )
     return out
 
 
@@ -118,3 +120,32 @@ def test_model_key_changes_when_any_artefact_changes(tmp_path):
     assert model_key(tmp_path) == k1 and len(k1) == 12
     (tmp_path / "stage2_h3.joblib").write_bytes(b"retrained")
     assert model_key(tmp_path) != k1
+
+
+def test_warning_inside_the_onset_bin_is_a_late_miss():
+    s = score(ticks({"12:30": "14:00"}), [ev(Level.WARNING, "12:30")], kp(h12=6.0), CFG)
+    assert (s.missed, s.miss_kinds) == (1, ("late",))
+
+
+def test_probability_that_rose_without_a_warning_is_a_rose_miss():
+    p = lambda t: 0.45 if ts("10:00") <= t < ts("11:00") else 0.0
+    s = score(ticks({}, p=p), [], kp(h12=6.0), CFG)
+    assert s.miss_kinds == ("rose",)
+
+
+def test_low_probability_throughout_is_a_flat_miss():
+    s = score(ticks({}, p=lambda t: 0.1), [], kp(h12=6.0), CFG)
+    assert s.miss_kinds == ("flat",)
+
+
+def test_mostly_stale_data_before_onset_is_a_stale_miss():
+    stale = lambda t: ts("09:00") <= t <= ts("12:00")
+    s = score(ticks({}, p=lambda t: 0.9, stale=stale), [], kp(h12=6.0), CFG)
+    assert s.miss_kinds == ("stale",)
+
+
+def test_miss_kinds_add_across_segments():
+    assert (Score(miss_kinds=("late",)) + Score(miss_kinds=("flat",))).miss_kinds == (
+        "late",
+        "flat",
+    )
