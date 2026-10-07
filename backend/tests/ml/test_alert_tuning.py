@@ -7,7 +7,7 @@ bin starting 12:00 is first observed at 15:00. A WARNING is useful when it holds
 
 import pandas as pd
 import pytest
-from ml.alert_tuning import Score, pick, score, storm_onsets, val_segments
+from ml.alert_tuning import Score, model_key, pick, score, storm_onsets, val_segments
 from ml.backtest import Tick
 
 from app.alerts.engine import AlertConfig, AlertEvent, Level
@@ -109,3 +109,12 @@ def test_val_segments_split_at_holdout_buffers():
         (pd.Timestamp("2022-01-01 00:00", tz="UTC"), pd.Timestamp("2022-01-12 23:55", tz="UTC")),
         (pd.Timestamp("2022-01-19 00:00", tz="UTC"), pd.Timestamp("2022-01-31 23:55", tz="UTC")),
     ]
+
+
+def test_model_key_changes_when_any_artefact_changes(tmp_path):
+    for h in (1, 3, 6):
+        (tmp_path / f"stage2_h{h}.joblib").write_bytes(b"model %d" % h)
+    k1 = model_key(tmp_path)
+    assert model_key(tmp_path) == k1 and len(k1) == 12
+    (tmp_path / "stage2_h3.joblib").write_bytes(b"retrained")
+    assert model_key(tmp_path) != k1

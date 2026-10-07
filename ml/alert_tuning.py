@@ -5,9 +5,11 @@ computed once per segment and every grid point only re-runs the state machine.
 """
 
 import argparse
+import hashlib
 import time
 from dataclasses import dataclass, replace
 from itertools import product
+from pathlib import Path
 from typing import cast
 
 import joblib
@@ -82,6 +84,14 @@ def val_segments(index: pd.DatetimeIndex, cfg: dict) -> list[tuple[pd.Timestamp,
     mask = split_masks(index, cfg)["val"]
     edges = np.flatnonzero(np.diff(np.concatenate([[0], mask.astype(int), [0]])))
     return [(index[a], index[b - 1]) for a, b in zip(edges[::2], edges[1::2], strict=True)]
+
+
+def model_key(models_dir: Path) -> str:
+    """Content hash of the Stage 2 artefacts, so a retrain never reuses stale cached forecasts."""
+    h = hashlib.sha256()
+    for hz in HORIZONS_H:
+        h.update((models_dir / f"stage2_h{hz}.joblib").read_bytes())
+    return h.hexdigest()[:12]
 
 
 def score(ticks: list[Tick], events: list[AlertEvent], kp3h: pd.Series, cfg: AlertConfig) -> Score:
@@ -178,7 +188,7 @@ def main(config: str, jobs: int) -> int:
     omni5.index, kp3h.index = _utc(omni5.index), _utc(kp3h.index)
     models_dir = ROOT / cfg["artefact_dir"]
     version = registry.load(models_dir / "stage2_h1.joblib")[0].version
-    cache = ROOT / "artefacts" / "alert_tuning" / str(version)
+    cache = ROOT / "artefacts" / "alert_tuning" / f"{version}-{model_key(models_dir)}"
     cache.mkdir(parents=True, exist_ok=True)
 
     segs = val_segments(pd.DatetimeIndex(omni5.index), hold)
