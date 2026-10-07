@@ -160,6 +160,16 @@ def test_grid_keeps_a_gap_and_includes_the_defaults():
 
 def test_pareto_keeps_only_undominated_configs():
     a, b, c = (AlertConfig(p_threshold=x) for x in (0.5, 0.4, 0.3))
+    d = AlertConfig(p_threshold=0.45)
     h = 730.5
-    res = {a: Score(h, 10, 6, 2, 9), b: Score(h, 10, 4, 4, 9), c: Score(h, 10, 4, 5, 9)}
-    assert pareto(res) == {a, b}  # c misses as many as b but has more false warnings
+    res = {
+        a: Score(h, 10, 6, 2, 9),
+        b: Score(h, 10, 4, 4, 9),
+        c: Score(h, 10, 4, 5, 9),
+        d: Score(h, 10, 4, 4, 9),
+    }
+    assert pareto(res) == {
+        a,
+        b,
+        d,
+    }  # c misses as many as b but has more false warnings; d ties b on both

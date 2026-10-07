@@ -93,7 +93,10 @@ def val_segments(index: pd.DatetimeIndex, cfg: dict) -> list[tuple[pd.Timestamp,
 
 
 def model_key(models_dir: Path) -> str:
-    """Content hash of the Stage 2 artefacts, so a retrain never reuses stale cached forecasts."""
+    """Content hash of the Stage 2 artefacts, so a retrain never reuses stale cached forecasts.
+
+    It does not cover the input parquets or the feature code: delete artefacts/alert_tuning/ after a re-ingest.
+    """
     h = hashlib.sha256()
     for hz in HORIZONS_H:
         h.update((models_dir / f"stage2_h{hz}.joblib").read_bytes())
@@ -221,7 +224,7 @@ def _report(
         "Missed = storm onset with no WARNING/ACTIVE held in the 3 h before it. Miss kinds: late =",
         "WARNING inside the onset bin (still before ACTIVE); stale = mostly stale L1 before onset;",
         "rose = P rose above p_clear but no WARNING in time; flat = P stayed at or below p_clear.",
-        "frontier = no other row has both fewer misses and fewer false warnings.",
+        "frontier = no other row is at least as good on both misses and false warnings and better on one.",
         "",
         (
             "| p_threshold | cooldown | p_clear | false/mo | missed | late | stale | rose | flat "
