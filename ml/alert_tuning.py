@@ -7,6 +7,7 @@ computed once per segment and every grid point only re-runs the state machine.
 import argparse
 import hashlib
 import time
+from collections import Counter
 from dataclasses import dataclass, replace
 from itertools import product
 from pathlib import Path
@@ -34,6 +35,7 @@ from ml.splits import split_masks
 
 COOLDOWNS = (12, 24, 36, 72)  # cycles of 5 min: 1, 2, 3, 6 h
 P_CLEARS = (0.2, 0.3, 0.4)
+P_THRESHOLDS = (0.5, 0.4, 0.3)
 CHUNK = pd.Timedelta(days=7)
 HOURS_PER_MONTH = 730.5
 EPISODE_GAP = pd.Timedelta(hours=24)  # Kp >= threshold bins closer than this are one storm
@@ -150,6 +152,28 @@ def score(ticks: list[Tick], events: list[AlertEvent], kp3h: pd.Series, cfg: Ale
     )
 
 
+def grid() -> list[AlertConfig]:
+    """cooldown x p_clear x p_threshold, keeping the hysteresis gap p_clear < p_threshold."""
+    return [
+        replace(DEFAULT_CFG, cooldown_cycles=cd, p_clear=pc, p_threshold=pt)
+        for pt, cd, pc in product(P_THRESHOLDS, COOLDOWNS, P_CLEARS)
+        if pc < pt
+    ]
+
+
+def pareto(results: dict[AlertConfig, Score]) -> set[AlertConfig]:
+    """Configs that no other config beats on both missed storms and false warnings."""
+
+    def beats(a: Score, b: Score) -> bool:
+        return (
+            a.missed <= b.missed
+            and a.false_warnings <= b.false_warnings
+            and (a.missed, a.false_warnings) != (b.missed, b.false_warnings)
+        )
+
+    return {c for c, s in results.items() if not any(beats(o, s) for o in results.values())}
+
+
 def pick(results: dict[AlertConfig, Score], baseline: AlertConfig) -> AlertConfig:
     """Fewest false warnings with no more missed storms than the baseline; then fewer events."""
     ok = [c for c, s in results.items() if s.missed <= results[baseline].missed]
@@ -187,22 +211,34 @@ def sweep(
     return out
 
 
-def _report(results: dict[AlertConfig, Score], base: AlertConfig, best: AlertConfig) -> str:
+def _report(
+    results: dict[AlertConfig, Score], base: AlertConfig, best: AlertConfig, front: set[AlertConfig]
+) -> str:
     lines = [
         "# Alert parameter tuning (validation block 2022-24 minus held-out buffers)",
         "",
         "Held-out storms were not used. `false/mo` = WARNINGs with no Kp >= 5- in their window.",
-        "Missed = storm onset with no WARNING/ACTIVE held in the 3 h before it.",
+        "Missed = storm onset with no WARNING/ACTIVE held in the 3 h before it. Miss kinds: late =",
+        "WARNING inside the onset bin (still before ACTIVE); stale = mostly stale L1 before onset;",
+        "rose = P rose above p_clear but no WARNING in time; flat = P stayed at or below p_clear.",
+        "frontier = no other row has both fewer misses and fewer false warnings.",
         "",
-        "| cooldown | p_clear | false/mo | missed | storms | median lead h | events | note |",
-        "|---|---|---|---|---|---|---|---|",
+        (
+            "| p_threshold | cooldown | p_clear | false/mo | missed | late | stale | rose | flat "
+            "| median lead h | events | note |"
+        ),
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
-    for c, s in results.items():
+    rows = sorted(results.items(), key=lambda kv: (-kv[0].p_threshold, kv[1].false_warnings))
+    for c, s in rows:
+        k = Counter(s.miss_kinds)
         lead = "-" if s.median_lead_h is None else f"{s.median_lead_h:.1f}"
-        note = ", ".join(n for n, x in (("baseline", base), ("picked", best)) if c == x)
+        marks = (("baseline", c == base), ("rule pick", c == best), ("frontier", c in front))
+        note = ", ".join(n for n, hit in marks if hit)
         lines.append(
-            f"| {c.cooldown_cycles} | {c.p_clear} | {s.per_month('false_warnings'):.2f} | "
-            f"{s.missed} | {s.storms} | {lead} | {s.events} | {note} |"
+            f"| {c.p_threshold} | {c.cooldown_cycles} | {c.p_clear} | "
+            f"{s.per_month('false_warnings'):.2f} | {s.missed} | {k['late']} | {k['stale']} | "
+            f"{k['rose']} | {k['flat']} | {lead} | {s.events} | {note} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -233,18 +269,23 @@ def main(config: str, jobs: int) -> int:
     parts = iter(cast(list[list[Cycle]], flat))
     segments = [[c for _ in w for c in next(parts)] for w in work]
 
-    grid = [
-        replace(DEFAULT_CFG, cooldown_cycles=cd, p_clear=pc)
-        for cd, pc in product(COOLDOWNS, P_CLEARS)
-    ]
+    configs = grid()
     t0 = time.perf_counter()
-    results = sweep(segments, kp3h, grid)  # ponytail: serial; parallelise only if this is slow
-    print(f"swept {len(grid)} configs in {(time.perf_counter() - t0) / 60:.1f} min", flush=True)
+    results = sweep(segments, kp3h, configs)  # ponytail: serial; parallelise only if this is slow
+    print(f"swept {len(configs)} configs in {(time.perf_counter() - t0) / 60:.1f} min", flush=True)
     best = pick(results, DEFAULT_CFG)
+    front = pareto(results)
     out = ROOT / "docs" / "reports" / "alert-tuning.md"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(_report(results, DEFAULT_CFG, best), encoding="utf-8")
-    print(f"picked cooldown_cycles={best.cooldown_cycles} p_clear={best.p_clear} -> {out}")
+    out.write_text(_report(results, DEFAULT_CFG, best, front), encoding="utf-8")
+    print(f"-> {out}")
+    print(f"rule pick: {best}")
+    for c in sorted(front, key=lambda c: -c.p_threshold):
+        s = results[c]
+        print(
+            f"frontier p_thr={c.p_threshold} cd={c.cooldown_cycles} p_clear={c.p_clear}: "
+            f"missed {s.missed}, false/mo {s.per_month('false_warnings'):.2f}"
+        )
     return 0
 
 

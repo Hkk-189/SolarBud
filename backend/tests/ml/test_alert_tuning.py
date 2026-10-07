@@ -7,7 +7,7 @@ bin starting 12:00 is first observed at 15:00. A WARNING is useful when it holds
 
 import pandas as pd
 import pytest
-from ml.alert_tuning import Score, model_key, pick, score, storm_onsets, val_segments
+from ml.alert_tuning import Score, grid, model_key, pareto, pick, score, storm_onsets, val_segments
 from ml.backtest import Tick
 
 from app.alerts.engine import AlertConfig, AlertEvent, Level
@@ -149,3 +149,17 @@ def test_miss_kinds_add_across_segments():
         "late",
         "flat",
     )
+
+
+def test_grid_keeps_a_gap_and_includes_the_defaults():
+    g = grid()
+    assert len(g) == 24  # 0.5: 4x3, 0.4: 4x2, 0.3: 4x1
+    assert all(c.p_clear < c.p_threshold for c in g)
+    assert AlertConfig() in g
+
+
+def test_pareto_keeps_only_undominated_configs():
+    a, b, c = (AlertConfig(p_threshold=x) for x in (0.5, 0.4, 0.3))
+    h = 730.5
+    res = {a: Score(h, 10, 6, 2, 9), b: Score(h, 10, 4, 4, 9), c: Score(h, 10, 4, 5, 9)}
+    assert pareto(res) == {a, b}  # c misses as many as b but has more false warnings
