@@ -4,6 +4,7 @@ import { formatNum, formatUtc } from "@/lib/format";
 
 export function SolarWindCard({ result }: { result: ApiResult<SolarWindPoint> }) {
   const title = "Solar wind (L1)";
+
   if (!result.ok) {
     return (
       <Card title={title}>
@@ -11,13 +12,16 @@ export function SolarWindCard({ result }: { result: ApiResult<SolarWindPoint> })
       </Card>
     );
   }
+
   const d = result.data;
+
   const rows: [string, string, number | null | undefined, number][] = [
     ["Speed", "km/s", d.speed_kms, 1],
     ["Density", "cm⁻³", d.density_cm3, 1],
     ["Bz (GSM)", "nT", d.bz_gsm_nt, 1],
     ["Bt", "nT", d.bt_nt, 1],
   ];
+
   return (
     <Card title={title}>
       <dl className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-2 gap-y-2 text-sm">

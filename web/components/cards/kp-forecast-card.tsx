@@ -5,6 +5,7 @@ import { formatNum, formatUtc } from "@/lib/format";
 
 export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
   const title = "Kp forecast (+1, +3, +6 h)";
+
   if (!result.ok) {
     return (
       <Card title={title}>
@@ -12,7 +13,9 @@ export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
       </Card>
     );
   }
+
   const { data } = result;
+
   return (
     <Card title={title}>
       {data.data_stale && (
