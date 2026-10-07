@@ -3,7 +3,9 @@ import { getKpForecast, getSolarWindLatest } from "@/lib/api/client";
 
 afterEach(() => vi.unstubAllGlobals());
 
-const json = (body: unknown, status = 200) =>
+type Body = { ok: number } | { detail: string };
+
+const json = (body: Body, status = 200) =>
   Promise.resolve(new Response(JSON.stringify(body), { status }));
 
 describe("api client", () => {

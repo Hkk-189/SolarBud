@@ -5,6 +5,7 @@ import { getKpForecast, getSolarWindLatest } from "@/lib/api/client";
 
 export default async function Home() {
   const [kp, wind] = await Promise.all([getKpForecast(), getSolarWindLatest()]);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Space weather now</h1>

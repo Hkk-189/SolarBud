@@ -16,6 +16,7 @@ export const NAV: { href: string; label: string; icon: IconName }[] = [
 
 export function Sidebar() {
   const path = usePathname();
+
   return (
     <aside className="glass fixed inset-y-0 left-0 z-30 w-16 border-r p-2 md:w-64 md:p-4">
       <div className="flex h-12 items-center px-2 text-lg font-bold md:h-8">
@@ -27,6 +28,7 @@ export function Sidebar() {
       <nav aria-label="Main" className="mt-4 flex flex-col gap-1">
         {NAV.map(({ href, label, icon }) => {
           const active = href === "/" ? path === "/" : path.startsWith(href);
+
           return (
             <Link
               key={href}

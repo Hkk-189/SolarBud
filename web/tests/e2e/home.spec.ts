@@ -17,9 +17,11 @@ for (const colorScheme of ["light", "dark"] as const) {
     const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, colorScheme });
     const page = await ctx.newPage();
     await page.goto("http://localhost:3000/");
+
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
+
     expect(overflow).toBeLessThanOrEqual(0);
     await expect(page.getByRole("link", { name: "NOAA SWPC" })).toBeVisible();
     await ctx.close();

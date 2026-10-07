@@ -8,6 +8,7 @@ import type { components } from "@/lib/api/schema";
 afterEach(cleanup);
 
 type Kp = components["schemas"]["KpForecast"];
+
 type Wind = components["schemas"]["SolarWindPoint"];
 
 const forecast: Kp = {
@@ -20,6 +21,7 @@ const forecast: Kp = {
     { horizon_h: 6, p10: 2.0, p50: 3.0, p90: 4.0 },
   ],
 };
+
 const wind: Wind = {
   time: "2026-10-04T11:58:00Z",
   speed_kms: 512.34,
@@ -27,6 +29,7 @@ const wind: Wind = {
   bz_gsm_nt: -9.25,
   bt_nt: 12.1,
 };
+
 const down = { ok: false } as const;
 
 describe("StormLevelCard", () => {
