@@ -48,6 +48,45 @@ def _last_sample(omni5: pd.DataFrame, t: pd.Timestamp) -> datetime | None:
     return None if ok.empty else (ok.index[-1] + pd.Timedelta("4min")).to_pydatetime()
 
 
+@dataclass(frozen=True)
+class Cycle:
+    """One worker cycle's inputs to the alert engine. Independent of AlertConfig, so it is cached."""
+
+    t: datetime
+    fc: KpForecast
+    observed_kp: float | None
+
+
+def forecast_stream(
+    omni5: pd.DataFrame, kp3h: pd.Series, start: pd.Timestamp, end: pd.Timestamp, models: dict
+) -> list[Cycle]:
+    """The expensive part of a replay (features + model per 5-min cycle)."""
+    cycles = []
+    for t in pd.date_range(start, end, freq=CADENCE):
+        out = forecast_from_5min(
+            omni5.loc[t - HISTORY : t], kp3h, t.to_pydatetime(), _last_sample(omni5, t), models
+        )
+        obs = kp_last(pd.DatetimeIndex([t]), kp3h).iloc[0]
+        cycles.append(
+            Cycle(t.to_pydatetime(), KpForecast(**out), None if np.isnan(obs) else float(obs))
+        )
+    return cycles
+
+
+def run_alerts(
+    cycles: list[Cycle], cfg: AlertConfig = DEFAULT_CFG
+) -> tuple[list[Tick], list[AlertEvent]]:
+    """The cheap part: the state machine over precomputed cycles."""
+    state, ticks, events = AlertState(), [], []
+    for c in cycles:
+        state, new = step(state, c.fc, c.observed_kp, cfg)
+        events += new
+        ticks.append(
+            Tick(c.t, _p(c.fc, cfg.kp_threshold), c.observed_kp, c.fc.data_stale, state.level)
+        )
+    return ticks, events
+
+
 def replay(
     omni5: pd.DataFrame,
     kp3h: pd.Series,
@@ -56,20 +95,14 @@ def replay(
     models: dict,
     cfg: AlertConfig = DEFAULT_CFG,
 ) -> tuple[list[Tick], list[AlertEvent]]:
-    state, ticks, events = AlertState(), [], []
-    for t in pd.date_range(start, end, freq=CADENCE):
-        out = forecast_from_5min(
-            omni5.loc[t - HISTORY : t], kp3h, t.to_pydatetime(), _last_sample(omni5, t), models
-        )
-        fc = KpForecast(**out)
-        obs = kp_last(pd.DatetimeIndex([t]), kp3h).iloc[0]
-        observed = None if np.isnan(obs) else float(obs)
-        state, new = step(state, fc, observed, cfg)
-        events += new
-        ticks.append(
-            Tick(t.to_pydatetime(), _p(fc, cfg.kp_threshold), observed, fc.data_stale, state.level)
-        )
-    return ticks, events
+    return run_alerts(forecast_stream(omni5, kp3h, start, end, models), cfg)
+
+
+def is_false_warning(issued_at: datetime, kp3h: pd.Series, thr: float) -> bool:
+    """No Kp >= thr from the start of the issue's 3 h bin to the longest forecast horizon after it."""
+    at = pd.Timestamp(issued_at)
+    window = kp3h.loc[at.floor("3h") : at + pd.Timedelta(hours=max(HORIZONS_H))]
+    return not bool((window >= thr).any())
 
 
 def summarise(
@@ -79,9 +112,6 @@ def summarise(
 
     def first(level: Level) -> datetime | None:
         return next((e.issued_at for e in events if e.level == level), None)
-
-    def storm_within(a: pd.Timestamp, b: pd.Timestamp) -> bool:
-        return bool((kp3h.loc[a:b] >= thr).any())
 
     onset = kp3h.loc[
         pd.Timestamp(ticks[0].t).floor("3h") : pd.Timestamp(ticks[-1].t)
@@ -99,12 +129,7 @@ def summarise(
         "lead_h": (first_obs - warn).total_seconds() / 3600 if warn and first_obs else None,
         "sequence_ok": all(lv in it for lv in SEQUENCE),
         "false_warnings": sum(
-            not storm_within(
-                pd.Timestamp(e.issued_at).floor("3h"),
-                pd.Timestamp(e.issued_at) + pd.Timedelta(hours=max(HORIZONS_H)),
-            )
-            for e in events
-            if e.level == Level.WARNING
+            is_false_warning(e.issued_at, kp3h, thr) for e in events if e.level == Level.WARNING
         ),
     }
 

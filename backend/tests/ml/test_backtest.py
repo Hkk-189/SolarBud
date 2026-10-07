@@ -8,9 +8,9 @@ Hand-computed with G1 (kp_threshold 4.667), engine cadence 2 up / 3 down, one cy
 import numpy as np
 import pandas as pd
 import pytest
-from ml.backtest import replay, summarise
+from ml.backtest import forecast_stream, replay, run_alerts, summarise
 
-from app.alerts.engine import Level
+from app.alerts.engine import AlertConfig, Level
 
 HIGH, LOW = (5.0, 5.5, 6.0), (2.0, 3.0, 4.0)
 D = "2024-05-10"
@@ -114,6 +114,27 @@ def test_lead_time_vs_observed_onset():
     assert s["first_obs_g1"] == ts("06:00")
     assert s["lead_h"] == pytest.approx(1 + 55 / 60)
     assert s["false_warnings"] == 0
+
+
+def test_one_forecast_stream_serves_any_alert_config():
+    """HIGH, LOW from 08:10, HIGH again from 08:30. WARNING 08:05, ALL_CLEAR 08:20 (3 low cycles).
+    Cooldown 12: cycles 08:25..09:20 are blocked, high from 09:25, so WARNING at 09:30.
+    Cooldown 0: high from 08:30, so WARNING at 08:35."""
+    fn = lambda t: LOW if ts("08:10") <= t < ts("08:30") else HIGH
+    cycles = forecast_stream(omni(), kp(), ts("08:00"), ts("10:00"), models(fn))
+    got = {}
+    for cd in (12, 0):
+        _, events = run_alerts(cycles, AlertConfig(cooldown_cycles=cd))
+        got[cd] = [(e.level, e.issued_at) for e in events]
+    wc = [Level.WARNING, Level.ALL_CLEAR, Level.WARNING]
+    assert got[12] == list(zip(wc, [ts("08:05"), ts("08:20"), ts("09:30")]))
+    assert got[0] == list(zip(wc, [ts("08:05"), ts("08:20"), ts("08:35")]))
+
+
+def test_replay_is_forecast_stream_then_alerts():
+    fn = lambda t: HIGH if t < ts("08:10") else LOW
+    args = (omni(), kp(), ts("08:00"), ts("09:00"), models(fn))
+    assert replay(*args) == run_alerts(forecast_stream(*args))
 
 
 def test_in_progress_bin_is_never_observed():
