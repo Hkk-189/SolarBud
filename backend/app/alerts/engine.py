@@ -38,10 +38,12 @@ class Level(StrEnum):
 class AlertConfig:
     g_level: int = 1
     p_threshold: float = 0.5
-    p_clear: float = 0.3  # a cycle counts toward de-escalation only below this
+    p_clear: float = 0.2  # a cycle counts toward de-escalation only below this
     up_cycles: int = 2
     down_cycles: int = 3
-    cooldown_cycles: int = 12  # 1 h at the 5-minute cadence: no new WARNING right after ALL_CLEAR
+    # 6 h at the 5-minute cadence: no new WARNING right after ALL_CLEAR.
+    # p_clear and cooldown were picked on the 2022-24 validation block, not on a held-out storm.
+    cooldown_cycles: int = 72
 
     @property
     def kp_threshold(self) -> float:
