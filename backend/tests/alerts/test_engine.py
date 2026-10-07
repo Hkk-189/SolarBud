@@ -22,10 +22,10 @@ def fc(q, i=0, stale=False):
     )
 
 
-# Probability gap (p_clear = 0.3). thr = 14/3 = 4.6667 throughout:
+# Probability gap (p_clear = 0.2). thr = 14/3 = 4.6667 throughout:
 #   MID  q=(4.0, 4.5, 5.5): q1 < thr <= q2 -> (thr - q1)/(q2 - q1) = 0.1667/1.0
 #        -> cdf = 0.5 + 0.4*0.1667 = 0.5667 -> P = 0.4333
-#        (above p_clear 0.3, at or below p_threshold 0.5)
+#        (above p_clear 0.2, at or below p_threshold 0.5)
 #   NEAR q=(4.0, 4.8, 5.5): q0 < thr <= q1 -> (thr - q0)/(q1 - q0) = 0.6667/0.8 = 0.8333
 #        -> cdf = 0.1 + 0.4*0.8333 = 0.4333 -> P = 0.5667 (just above p_threshold)
 MID, NEAR = (4.0, 4.5, 5.5), (4.0, 4.8, 5.5)
@@ -43,6 +43,11 @@ def run(cycles, state=AlertState, cfg=CFG):
 
 def test_kp_threshold_is_g1():
     assert abs(CFG.kp_threshold - 14 / 3) < 1e-9
+
+
+def test_defaults_are_the_validation_picks():
+    """Chosen on the 2022-24 validation block (docs/reports/alert-tuning.md), not on a held-out storm."""
+    assert (CFG.p_clear, CFG.cooldown_cycles) == (0.2, 72)
 
 
 def test_escalates_on_second_cycle_not_first():
@@ -145,8 +150,8 @@ def test_all_clear_is_emitted_once_and_can_reescalate():
     state, _ = run([(HIGH, False, 5.33)])
     state, ev = run([(LOW, False, 3.0)] * 6, state)
     assert [x for e in ev for x in e] == [Level.ALL_CLEAR]
-    # the 12-cycle cooldown must elapse first: ALL_CLEAR came on LOW cycle 3, so 3 of 12 are used
-    state, _ = run([(LOW, False, 3.0)] * 9, state)
+    # the cooldown must elapse first: ALL_CLEAR came on LOW cycle 3, so 3 of the cycles are used
+    state, _ = run([(LOW, False, 3.0)] * (CFG.cooldown_cycles - 3), state)
     _, ev = run([(HIGH, False, 3.0)] * 2, state)
     assert ev == [[], [Level.WARNING]]
 

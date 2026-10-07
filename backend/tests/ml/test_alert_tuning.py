@@ -77,7 +77,7 @@ def test_scores_add_across_segments():
 
 
 def test_pick_fewest_false_warnings_without_more_misses_than_baseline():
-    base = AlertConfig()
+    base = AlertConfig(cooldown_cycles=12)
     cfgs = [AlertConfig(cooldown_cycles=c) for c in (12, 24, 36, 72)]
     h = 730.5  # one month, so per-month rates equal the counts
     results = {
