@@ -1,17 +1,28 @@
+x-app: &app
+  build: ./backend
+  env_file: .env
+  environment:
+    # Inside compose the database host is the service name, not localhost.
+    DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/solarbud
+  restart: unless-stopped
+  volumes: ["./artefacts:/app/artefacts:ro"]  # stage2_h*.joblib, gitignored; scp them to the host
+  depends_on: {postgres: {condition: service_healthy}}
+
 services:
   postgres:
     image: postgres:16
     environment: {POSTGRES_PASSWORD: postgres, POSTGRES_DB: solarbud}
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]  # host-only, so make migrate / load-history work; never public
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    restart: unless-stopped
     healthcheck: {test: ["CMD-SHELL", "pg_isready -U postgres"], interval: 5s, retries: 10}
   api:
-    build: ./backend
-    command: uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000
-    env_file: .env
+    <<: *app
+    command: sh -c "alembic upgrade head && uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000"
     ports: ["8000:8000"]
-    depends_on: {postgres: {condition: service_healthy}}
   worker:
-    build: ./backend
+    <<: *app
     command: python -m app.workers.scheduler
-    env_file: .env
-    depends_on: {postgres: {condition: service_healthy}}
+
+volumes:
+  pgdata:
