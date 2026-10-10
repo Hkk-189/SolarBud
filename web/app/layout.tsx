@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Providers } from "@/components/providers";
 import { Footer } from "@/components/shell/footer";
 import { Header } from "@/components/shell/header";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <div className="ml-16 pt-16 md:ml-64">
           <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-[1400px] flex-col px-4 py-6 md:px-8">
-            <main className="flex-1">{children}</main>
+            <main className="flex-1">
+              <Providers>{children}</Providers>
+            </main>
             <Footer />
           </div>
         </div>
