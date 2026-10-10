@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { TimeZoneProvider } from "@/components/charts/time-zone";
 import { SolarWindCharts } from "@/components/charts/solar-wind-charts";
 import type { SolarWindPoint } from "@/lib/api/client";
 
@@ -16,7 +17,7 @@ const initial: SolarWindPoint[] = [{ time: "2024-05-10T18:00:00Z", speed_kms: 50
 
 const wrap = (ui: React.ReactNode) => (
   <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-    {ui}
+    <TimeZoneProvider>{ui}</TimeZoneProvider>
   </QueryClientProvider>
 );
 

@@ -1,0 +1,18 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { GET } from "@/app/api/kp-forecast/route";
+
+afterEach(() => vi.unstubAllGlobals());
+
+it("proxies the Kp forecast", async () => {
+  const f = vi.fn<typeof fetch>(() => Promise.resolve(Response.json({ model_version: "x" })));
+  vi.stubGlobal("fetch", f);
+  const res = await GET();
+  expect(res.status).toBe(200);
+  expect(await res.json()).toEqual({ model_version: "x" });
+  expect(new URL(String(f.mock.calls[0]![0])).pathname).toBe("/v1/forecast/kp");
+});
+
+it("answers 503 when the API is down", async () => {
+  vi.stubGlobal("fetch", () => Promise.reject(new TypeError("fetch failed")));
+  expect((await GET()).status).toBe(503);
+});

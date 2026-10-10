@@ -1,3 +1,4 @@
+import { KpBandChart } from "@/components/charts/kp-band-chart";
 import { SolarWindCharts } from "@/components/charts/solar-wind-charts";
 import { KpForecastCard } from "@/components/cards/kp-forecast-card";
 import { SolarWindCard } from "@/components/cards/solar-wind-card";
@@ -19,6 +20,7 @@ export default async function Home() {
         <KpForecastCard result={kp} />
         <SolarWindCard result={wind} />
       </div>
+      <KpBandChart initial={kp.ok ? kp.data : null} />
       <SolarWindCharts initial={history.ok ? history.data : null} />
     </div>
   );

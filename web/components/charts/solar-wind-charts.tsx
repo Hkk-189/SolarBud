@@ -1,11 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Card, Empty } from "@/components/cards/card";
 import { EChart } from "./echart";
+import { TimeZoneToggle, useTimeZone } from "./time-zone";
+import { REFRESH_MS, useChartColors } from "./use-chart-colors";
 import type { SolarWindPoint } from "@/lib/api/client";
-import { type ChartColors, type WindField, lineOption } from "@/lib/chart-options";
+import { type WindField, lineOption } from "@/lib/chart-options";
 
 const SERIES: { field: WindField; label: string; unit: string }[] = [
   { field: "speed_kms", label: "Speed", unit: "km/s" },
@@ -13,10 +15,6 @@ const SERIES: { field: WindField; label: string; unit: string }[] = [
   { field: "bz_gsm_nt", label: "Bz (GSM)", unit: "nT" },
   { field: "bt_nt", label: "Bt", unit: "nT" },
 ];
-
-const FALLBACK: ChartColors = { line: "#423d38", text: "#6f665d", grid: "#e3e0dd" };
-
-const REFRESH_MS = 5 * 60 * 1000; // the worker's forecast cadence
 
 async function fetchWindow(): Promise<SolarWindPoint[]> {
   const res = await fetch("/api/solar-wind");
@@ -26,31 +24,6 @@ async function fetchWindow(): Promise<SolarWindPoint[]> {
   return res.json();
 }
 
-/** Canvas cannot read CSS variables, so resolve the theme tokens and follow the OS scheme. */
-function useChartColors(): ChartColors {
-  const [colors, setColors] = useState(FALLBACK);
-
-  useEffect(() => {
-    const read = () => {
-      const css = getComputedStyle(document.documentElement);
-      const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
-      setColors({
-        line: v("--foreground", FALLBACK.line),
-        text: v("--muted", FALLBACK.text),
-        grid: v("--outline", FALLBACK.grid),
-      });
-    };
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    read();
-    media.addEventListener("change", read);
-
-    return () => media.removeEventListener("change", read);
-  }, []);
-
-  return colors;
-}
-
 interface Props {
   initial: SolarWindPoint[] | null;
   /** The canvas renderer; tests pass a stand-in because jsdom has no canvas. */
@@ -58,7 +31,7 @@ interface Props {
 }
 
 export function SolarWindCharts({ initial, Chart = EChart }: Props) {
-  const [utc, setUtc] = useState(true);
+  const { utc } = useTimeZone();
   const colors = useChartColors();
 
   const { data, isError } = useQuery({
@@ -94,14 +67,7 @@ export function SolarWindCharts({ initial, Chart = EChart }: Props) {
         <p className="text-xs text-muted">
           {isError ? "Refresh failed, showing the last data." : "Updates every 5 min."}
         </p>
-        <button
-          type="button"
-          aria-pressed={utc}
-          onClick={() => setUtc(!utc)}
-          className="rounded-card border border-outline px-3 py-1 text-xs font-semibold"
-        >
-          {utc ? "UTC" : "Local time"}
-        </button>
+        <TimeZoneToggle />
       </div>
       {data.length === 0 ? (
         <Empty>No solar wind data in the last 24 h.</Empty>
