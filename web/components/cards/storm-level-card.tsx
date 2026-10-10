@@ -18,7 +18,7 @@ export function StormLevelCard({
       <p className="mt-3 text-sm text-muted">
         {h1 ? "Forecast, +1 h (median Kp)" : "No forecast available"}
       </p>
-      <AlertLevel result={alert} />
+      <AlertLevel result={alert} stale={result.ok && result.data.data_stale} />
     </Card>
   );
 }

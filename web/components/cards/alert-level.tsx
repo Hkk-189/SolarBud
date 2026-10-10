@@ -7,8 +7,10 @@ const DOT = new Map([
   ["all_clear", "var(--success)"],
 ]);
 
-function label(level: string): string {
-  if (level === "none") return "No active alert";
+function label(level: string, stale: boolean): string {
+  if (level === "none") {
+    return stale ? "No active alert (data stale, alerts may be suppressed)" : "No active alert";
+  }
 
   if (level === "all_clear") return "All clear";
 
@@ -16,7 +18,13 @@ function label(level: string): string {
 }
 
 /** Alert level in words; the dot is decoration, never the only signal. */
-export function AlertLevel({ result }: { result: ApiResult<AlertStatus> }) {
+export function AlertLevel({
+  result,
+  stale,
+}: {
+  result: ApiResult<AlertStatus>;
+  stale: boolean;
+}) {
   if (!result.ok) return <p className="mt-3 text-sm text-muted">Alert status unavailable</p>;
 
   const { level, since } = result.data;
@@ -30,7 +38,7 @@ export function AlertLevel({ result }: { result: ApiResult<AlertStatus> }) {
           className="inline-block size-2.5 rounded-full border border-outline"
           style={dot ? { backgroundColor: dot, borderColor: dot } : undefined}
         />
-        {label(level)}
+        {label(level, stale)}
       </p>
       {since ? <p className="text-muted">Since {formatUtc(since)}</p> : null}
     </div>

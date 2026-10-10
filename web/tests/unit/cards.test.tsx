@@ -59,6 +59,22 @@ describe("StormLevelCard", () => {
     render(<StormLevelCard result={down} alert={{ ok: true, data }} />);
     expect(screen.getByText("Since 2026-10-10 05:05 UTC")).toBeTruthy();
   });
+  it("flags a stale forecast next to no active alert", () => {
+    const stale = { ok: true, data: { ...forecast, data_stale: true } } as const;
+    render(<StormLevelCard result={stale} alert={quiet} />);
+    expect(screen.getByText(/no active alert/i).textContent).toMatch(/stale/i);
+  });
+  it("shows plain no active alert for a fresh forecast", () => {
+    render(<StormLevelCard result={{ ok: true, data: forecast }} alert={quiet} />);
+    expect(screen.getByText("No active alert")).toBeTruthy();
+    expect(screen.queryByText(/stale/i)).toBeNull();
+  });
+  it("shows the G badge and Warning together for a live forecast", () => {
+    const warn = { ok: true, data: { level: "warning", since: null } } as const;
+    render(<StormLevelCard result={{ ok: true, data: forecast }} alert={warn} />);
+    expect(screen.getByText("G2")).toBeTruthy();
+    expect(screen.getByText("Warning")).toBeTruthy();
+  });
   it("says alert status is unavailable, never no alert, and keeps the G badge", () => {
     render(<StormLevelCard result={{ ok: true, data: forecast }} alert={down} />);
     expect(screen.getByText("Alert status unavailable")).toBeTruthy();
