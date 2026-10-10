@@ -68,3 +68,14 @@ def test_unknown_persona_raises():
 def test_watch_is_not_renderable_yet():  # needs Stage 1
     with pytest.raises(ValueError, match="level"):
         msg(Level.WATCH, "aurora")
+
+
+def test_drivers_skip_a_nan_last_row():
+    import pandas as pd
+
+    from app.alerts.templates import drivers
+
+    idx = pd.date_range("2024-05-10 17:58", periods=3, freq="1min", tz="UTC")
+    frame = pd.DataFrame({"bz_gsm_nt": [-12.0, -9.6, None], "speed_kms": [700, 710.4, None]}, idx)
+    assert drivers(frame, idx[-1].to_pydatetime()) == ["Bz -10 nT", "solar wind 710 km/s"]
+    assert drivers(frame.iloc[:0], idx[-1].to_pydatetime()) == []

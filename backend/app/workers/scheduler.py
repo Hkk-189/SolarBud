@@ -7,14 +7,17 @@ from pathlib import Path
 from typing import cast
 
 import httpx
+import numpy as np
 import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
+from app.alerts.engine import DEFAULT_CFG, AlertConfig, AlertEvent, AlertState, Level, step
+from app.alerts.templates import drivers, render
 from app.core.config import settings
 from app.core.constants import HORIZONS_H
-from app.db.models import Forecast, Kp3h, SolarWind1m
+from app.db.models import AlertEventRow, AlertStateRow, Forecast, Kp3h, SolarWind1m
 from app.db.session import SessionLocal
 from app.features.propagation import shift_to_bowshock
 from app.features.targets import kp_last
@@ -22,6 +25,7 @@ from app.features.windows import trailing_features
 from app.ingest.swpc import MAG_COLUMNS, PLASMA_COLUMNS, fetch_json, parse_rtsw, parse_swpc_kp
 from app.models import registry
 from app.qc.clean import is_stale, range_filter
+from app.schemas.forecast import KpForecast
 
 log = logging.getLogger(__name__)
 SW_COLS = ["density_cm3", "speed_kms", "bx_gsm_nt", "by_gsm_nt", "bz_gsm_nt", "bt_nt"]
@@ -61,6 +65,23 @@ def forecast_from_5min(
         "data_stale": is_stale(last, now),
         "horizons": horizons,
     }
+
+
+def alert_cycle(
+    state: AlertState,
+    out: dict,
+    observed_kp: float | None,
+    sw: pd.DataFrame,
+    cfg: AlertConfig = DEFAULT_CFG,
+) -> tuple[AlertState, list[AlertEvent], list[str]]:
+    """Pure alert step on one forecast cycle; renders both personas for each event (dry run)."""
+    state, events = step(state, KpForecast(**out), observed_kp, cfg)
+    msgs = [
+        render(e, persona, "UTC", drivers(sw, e.issued_at), cfg)
+        for e in events
+        for persona in ("aurora", "gnss")
+    ]
+    return state, events, msgs
 
 
 async def ingest_once(client: httpx.AsyncClient) -> None:
@@ -125,9 +146,23 @@ async def forecast_once(models: dict) -> None:
         kp3h = pd.Series({r.time: r.kp for r in kp}, dtype=float)
         kp3h.index = pd.DatetimeIndex(kp3h.index, tz="UTC") if len(kp3h) else kp3h.index
         out = run_forecast_cycle(sw_df, kp3h, now, models)
-        s.add(Forecast(**out))
-        await s.commit()
-    log.info("forecast issued", extra={"stale": out["data_stale"]})
+        obs = kp_last(pd.DatetimeIndex([pd.Timestamp(now).floor("5min")]), kp3h).iloc[0]
+        row = await s.get(AlertStateRow, 1) or AlertStateRow(id=1, level=Level.NONE, since=None)
+        prev = AlertState(Level(row.level), row.up or 0, row.down or 0, row.cooldown or 0)
+        state, events, msgs = alert_cycle(prev, out, None if np.isnan(obs) else float(obs), sw_df)
+        row.level, row.up, row.down, row.cooldown = (
+            state.level,
+            state.up,
+            state.down,
+            state.cooldown,
+        )
+        if events:
+            row.since = events[-1].issued_at
+        s.add_all([Forecast(**out), row, *(AlertEventRow(**vars(e)) for e in events)])
+        await s.commit()  # forecast, state and events together: a failed cycle advances nothing
+    log.info("forecast issued", extra={"stale": out["data_stale"], "alert": str(state.level)})
+    for m in msgs:
+        log.info("DRY RUN alert (not sent):\n%s", m)
 
 
 def _safe(coro_fn, name: str):

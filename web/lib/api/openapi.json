@@ -1,6 +1,72 @@
 {
   "components": {
     "schemas": {
+      "AlertEventOut": {
+        "properties": {
+          "issued_at": {
+            "title": "Issued At",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "observed_kp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Kp"
+          },
+          "p_exceed": {
+            "title": "P Exceed",
+            "type": "number"
+          }
+        },
+        "required": [
+          "issued_at",
+          "level",
+          "p_exceed"
+        ],
+        "title": "AlertEventOut",
+        "type": "object"
+      },
+      "AlertStatus": {
+        "properties": {
+          "last_event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlertEventOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "level": {
+            "default": "none",
+            "title": "Level",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          }
+        },
+        "title": "AlertStatus",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -229,6 +295,27 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/v1/alerts/current": {
+      "get": {
+        "operationId": "current_v1_alerts_current_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Current",
+        "tags": [
+          "alerts"
+        ]
       }
     },
     "/v1/forecast/kp": {

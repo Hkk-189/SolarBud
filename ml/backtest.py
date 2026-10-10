@@ -20,7 +20,7 @@ from app.alerts.engine import (
     _p,
     step,
 )
-from app.alerts.templates import render
+from app.alerts.templates import drivers, render
 from app.core.constants import HORIZONS_H, KP_TOL
 from app.features.targets import kp_last
 from app.models import registry
@@ -139,11 +139,6 @@ def _utc(idx: pd.Index) -> pd.DatetimeIndex:
     return d.tz_localize("UTC") if d.tz is None else d
 
 
-def _drivers(omni5: pd.DataFrame, at: datetime) -> list[str]:
-    row = omni5.loc[: pd.Timestamp(at)].iloc[-1]
-    return [f"Bz {row.bz_gsm_nt:.0f} nT", f"solar wind {row.speed_kms:.0f} km/s"]
-
-
 def _report(
     storm: str, tz: str, s: dict, ticks: list[Tick], events: list[AlertEvent], omni5, cfg
 ) -> str:
@@ -152,7 +147,7 @@ def _report(
     lines += ["", "## Messages", ""]
     for e in events:
         for persona in ("aurora", "gnss"):
-            body = render(e, persona, tz, _drivers(omni5, e.issued_at), cfg)
+            body = render(e, persona, tz, drivers(omni5, e.issued_at), cfg)
             lines += [f"### {e.level} / {persona} / {e.issued_at:%Y-%m-%d %H:%M} UTC", "", body, ""]
     lines += [
         "## Hourly",

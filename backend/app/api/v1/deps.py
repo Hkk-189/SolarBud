@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import select
 
-from app.db.models import Forecast, SolarWind1m
+from app.db.models import AlertEventRow, AlertStateRow, Forecast, SolarWind1m
 from app.db.session import SessionLocal
 
 _SW = ("time", "source", "density_cm3", "speed_kms", "bx_gsm_nt", "by_gsm_nt", "bz_gsm_nt", "bt_nt")
@@ -39,5 +39,22 @@ def solar_wind_range():
                 )
             ).scalars()
             return [{c: getattr(r, c) for c in _SW} for r in rows]
+
+    return get
+
+
+def current_alert():
+    async def get() -> dict | None:
+        async with SessionLocal() as s:
+            state = await s.get(AlertStateRow, 1)
+            ev = (
+                await s.execute(
+                    select(AlertEventRow).order_by(AlertEventRow.issued_at.desc()).limit(1)
+                )
+            ).scalar_one_or_none()
+        if state is None:
+            return None
+        last = ev and {c: getattr(ev, c) for c in ("issued_at", "level", "p_exceed", "observed_kp")}
+        return {"level": state.level, "since": state.since, "last_event": last}
 
     return get
