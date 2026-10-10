@@ -139,6 +139,30 @@
         "title": "KpForecast",
         "type": "object"
       },
+      "KpPoint": {
+        "properties": {
+          "kp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kp"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "time"
+        ],
+        "title": "KpPoint",
+        "type": "object"
+      },
       "SolarWindPoint": {
         "properties": {
           "bt_nt": {
@@ -336,6 +360,63 @@
         "summary": "Kp Forecast",
         "tags": [
           "forecast"
+        ]
+      }
+    },
+    "/v1/kp": {
+      "get": {
+        "operationId": "window_v1_kp_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "title": "Start",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "title": "End",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KpPoint"
+                  },
+                  "title": "Response Window V1 Kp Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Window",
+        "tags": [
+          "kp"
         ]
       }
     },

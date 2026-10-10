@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 
@@ -24,6 +24,12 @@ def client():
 
     app.dependency_overrides[deps.latest_forecast] = lambda: fc
     app.dependency_overrides[deps.solar_wind_range] = lambda: sw
+
+    async def kp(start, end):
+        t = datetime(2024, 5, 8, tzinfo=UTC)
+        return [{"time": t, "kp": 4.33}, {"time": t + timedelta(hours=3), "kp": None}]
+
+    app.dependency_overrides[deps.kp_range] = lambda: kp
     return TestClient(app)
 
 
@@ -42,6 +48,21 @@ def test_solar_wind_range_limits():  # Review Focus 5
     assert c.get("/v1/solar-wind", params=too_long).status_code == 422
     assert c.get("/v1/solar-wind", params=backwards).status_code == 422
     assert c.get("/v1/solar-wind", params=naive).status_code == 200
+
+
+def test_kp_contract_and_limits():
+    c = client()
+    ok = {"start": "2024-05-08T00:00:00Z", "end": "2024-05-09T00:00:00Z"}
+    assert c.get("/v1/kp", params=ok).json() == [
+        {"time": "2024-05-08T00:00:00Z", "kp": 4.33},
+        {"time": "2024-05-08T03:00:00Z", "kp": None},
+    ]
+    too_long = {"start": "2024-05-01T00:00:00Z", "end": "2024-05-09T00:00:00Z"}
+    backwards = {"start": "2024-05-09T00:00:00Z", "end": "2024-05-08T00:00:00Z"}
+    naive = {"start": "2024-05-08T00:00:00", "end": "2024-05-09T00:00:00"}
+    assert c.get("/v1/kp", params=too_long).status_code == 422
+    assert c.get("/v1/kp", params=backwards).status_code == 422
+    assert c.get("/v1/kp", params=naive).status_code == 200
 
 
 def test_health():
