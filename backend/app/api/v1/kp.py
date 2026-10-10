@@ -12,7 +12,9 @@ router = APIRouter(prefix="/kp", tags=["kp"])
 
 
 @router.get("", response_model=list[KpPoint])
-async def window(start: datetime, end: datetime, get: Annotated[Callable, Depends(deps.kp_range)]):
+async def kp_window(
+    start: datetime, end: datetime, get: Annotated[Callable, Depends(deps.kp_range)]
+):
     start, end = _utc(start), _utc(end)  # naive input is treated as UTC
     if end <= start:
         raise HTTPException(422, "end must be after start")

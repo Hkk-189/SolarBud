@@ -365,7 +365,7 @@
     },
     "/v1/kp": {
       "get": {
-        "operationId": "window_v1_kp_get",
+        "operationId": "kp_window_v1_kp_get",
         "parameters": [
           {
             "in": "query",
@@ -396,7 +396,7 @@
                   "items": {
                     "$ref": "#/components/schemas/KpPoint"
                   },
-                  "title": "Response Window V1 Kp Get",
+                  "title": "Response Kp Window V1 Kp Get",
                   "type": "array"
                 }
               }
@@ -414,7 +414,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Window",
+        "summary": "Kp Window",
         "tags": [
           "kp"
         ]

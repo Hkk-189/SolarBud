@@ -42,7 +42,7 @@ it("keeps the forecast chart when observed Kp is missing and its fetch fails", a
   vi.stubGlobal("fetch", f);
   const { container } = render(wrap(<KpBandChart initial={base} initialObserved={null} Chart={FakeChart} />));
   await vi.waitFor(() => expect(f).toHaveBeenCalledWith("/api/kp-observed"), { timeout: 4000 });
-  await new Promise((r) => setTimeout(r, 1500)); // let the one retry fail too
+  await vi.waitFor(() => expect(f).toHaveBeenCalledTimes(2), { timeout: 4000 }); // the one retry
   expect(within(container).getAllByTestId("chart")).toHaveLength(1);
   expect(within(container).queryByText(/unavailable/i)).toBeNull();
 });

@@ -62,8 +62,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Window */
-        get: operations["window_v1_kp_get"];
+        /** Kp Window */
+        get: operations["kp_window_v1_kp_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -269,7 +269,7 @@ export interface operations {
             };
         };
     };
-    window_v1_kp_get: {
+    kp_window_v1_kp_get: {
         parameters: {
             query: {
                 start: string;
