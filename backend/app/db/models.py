@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Float, String
+from sqlalchemy import BigInteger, DateTime, Float, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -37,3 +37,24 @@ class Forecast(Base):
     model_version: Mapped[str] = mapped_column(String(64))
     data_stale: Mapped[bool]
     horizons: Mapped[list] = mapped_column(JSONB)
+
+
+class AlertStateRow(Base):
+    """The worker's alert state machine (`app.alerts.engine.AlertState`): a single row, id 1."""
+
+    __tablename__ = "alert_state"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    level: Mapped[str] = mapped_column(String(16))
+    up: Mapped[int]
+    down: Mapped[int]
+    cooldown: Mapped[int]
+    since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # last level change
+
+
+class AlertEventRow(Base):
+    __tablename__ = "alert_event"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    level: Mapped[str] = mapped_column(String(16))
+    p_exceed: Mapped[float] = mapped_column(Float)
+    observed_kp: Mapped[float | None] = mapped_column(Float)
