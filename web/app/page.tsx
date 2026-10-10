@@ -3,11 +3,12 @@ import { SolarWindCharts } from "@/components/charts/solar-wind-charts";
 import { KpForecastCard } from "@/components/cards/kp-forecast-card";
 import { SolarWindCard } from "@/components/cards/solar-wind-card";
 import { StormLevelCard } from "@/components/cards/storm-level-card";
-import { getKpForecast, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
+import { getAlertCurrent, getKpForecast, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
 
 export default async function Home() {
-  const [kp, wind, history] = await Promise.all([
+  const [kp, alert, wind, history] = await Promise.all([
     getKpForecast(),
+    getAlertCurrent(),
     getSolarWindLatest(),
     getSolarWindWindow(24),
   ]);
@@ -16,7 +17,7 @@ export default async function Home() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Space weather now</h1>
       <div className="grid gap-4 md:grid-cols-3">
-        <StormLevelCard result={kp} />
+        <StormLevelCard result={kp} alert={alert} />
         <KpForecastCard result={kp} />
         <SolarWindCard result={wind} />
       </div>

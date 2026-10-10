@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getKpForecast, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
+import { getAlertCurrent, getKpForecast, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -25,6 +25,20 @@ describe("api client", () => {
   it("never throws when the network fails", async () => {
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("fetch failed")));
     expect(await getSolarWindLatest()).toEqual({ ok: false });
+  });
+});
+
+describe("alert current", () => {
+  it("hits /v1/alerts/current", async () => {
+    const f = vi.fn<typeof fetch>(() => json({ ok: 1 }));
+    vi.stubGlobal("fetch", f);
+    await getAlertCurrent();
+    expect(f.mock.calls[0]![0]).toBe("http://localhost:8000/v1/alerts/current");
+  });
+
+  it("returns ok:false on 503", async () => {
+    vi.stubGlobal("fetch", () => json({ detail: "x" }, 503));
+    expect(await getAlertCurrent()).toEqual({ ok: false });
   });
 });
 
