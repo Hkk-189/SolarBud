@@ -25,6 +25,7 @@
   --g0-fg: #016630;
   --g1-bg: #fef9c2;
   --g1-fg: #874b00;
+  --g1-line: #874b00; /* G1 threshold line on charts; dark mode lightens it */
   --g2-bg: #ffe08a;
   --g2-fg: #6b3d00;
   --g3-bg: #ffe2e2;
@@ -53,6 +54,7 @@
     --success: #00c758;
     --warning: #edb200;
     --danger: #fb2c36;
+    --g1-line: #fef9c2;
   }
 }
 
@@ -68,6 +70,7 @@
   --success: #00c758;
   --warning: #edb200;
   --danger: #fb2c36;
+  --g1-line: #fef9c2;
 }
 
 @theme inline {

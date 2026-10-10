@@ -24,7 +24,7 @@ it("one toggle switches every chart on the page", () => {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <TimeZoneProvider>
-        <KpBandChart initial={kp} Chart={FakeChart} />
+        <KpBandChart initial={kp} initialObserved={[]} Chart={FakeChart} />
         <SolarWindCharts initial={[{ time: "2024-05-10T18:00:00Z" }]} Chart={FakeChart} />
       </TimeZoneProvider>
     </QueryClientProvider>,

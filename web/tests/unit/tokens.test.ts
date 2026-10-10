@@ -49,6 +49,7 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     ["--g3-fg", "--g3-bg"],
     ["--g4-fg", "--g4-bg"],
     ["--g5-fg", "--g5-bg"],
+    ["--g1-line", "--surface-elevated"],
   ])("light: %s on %s", (fg, bg) => {
     expect(text(light, fg, bg)).toBeGreaterThanOrEqual(4.5);
   });
@@ -58,6 +59,7 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     ["--foreground", "--surface"],
     ["--muted", "--background"],
     ["--muted", "--surface"],
+    ["--g1-line", "--surface-elevated"],
   ])("dark: %s on %s", (fg, bg) => {
     const merged = { ...light, ...dark };
     expect(text(merged, fg, bg)).toBeGreaterThanOrEqual(4.5);

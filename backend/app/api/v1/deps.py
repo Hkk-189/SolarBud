@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import select
 
-from app.db.models import AlertEventRow, AlertStateRow, Forecast, SolarWind1m
+from app.db.models import AlertEventRow, AlertStateRow, Forecast, Kp3h, SolarWind1m
 from app.db.session import SessionLocal
 
 _SW = ("time", "source", "density_cm3", "speed_kms", "bx_gsm_nt", "by_gsm_nt", "bz_gsm_nt", "bt_nt")
@@ -39,6 +39,19 @@ def solar_wind_range():
                 )
             ).scalars()
             return [{c: getattr(r, c) for c in _SW} for r in rows]
+
+    return get
+
+
+def kp_range():
+    async def get(start: datetime, end: datetime) -> list[dict]:
+        async with SessionLocal() as s:
+            rows = (
+                await s.execute(
+                    select(Kp3h).where(Kp3h.time >= start, Kp3h.time <= end).order_by(Kp3h.time)
+                )
+            ).scalars()
+            return [{"time": r.time, "kp": r.kp} for r in rows]
 
     return get
 
