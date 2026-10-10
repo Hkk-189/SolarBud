@@ -1,0 +1,21 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { GET } from "@/app/api/solar-wind/route";
+
+afterEach(() => vi.unstubAllGlobals());
+
+it("proxies the last 24 h from the API", async () => {
+  const f = vi.fn<typeof fetch>(() => Promise.resolve(Response.json([{ time: "2024-05-10T18:00:00Z" }])));
+  vi.stubGlobal("fetch", f);
+  const res = await GET();
+  expect(res.status).toBe(200);
+  expect(await res.json()).toEqual([{ time: "2024-05-10T18:00:00Z" }]);
+  const url = new URL(String(f.mock.calls[0]![0]));
+  expect(url.pathname).toBe("/v1/solar-wind");
+  const span = Date.parse(url.searchParams.get("end")!) - Date.parse(url.searchParams.get("start")!);
+  expect(span).toBe(24 * 3600 * 1000);
+});
+
+it("answers 503 when the API is down", async () => {
+  vi.stubGlobal("fetch", () => Promise.reject(new TypeError("fetch failed")));
+  expect((await GET()).status).toBe(503);
+});

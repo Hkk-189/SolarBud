@@ -31,3 +31,12 @@ async function get<T>(path: string): Promise<ApiResult<T>> {
 export const getKpForecast = () => get<KpForecast>("/v1/forecast/kp");
 
 export const getSolarWindLatest = () => get<SolarWindPoint>("/v1/solar-wind/latest");
+
+/** The last `hours` of 1-minute solar wind, for the history charts. */
+export function getSolarWindWindow(hours: number) {
+  const end = new Date();
+  const start = new Date(end.getTime() - hours * 3600 * 1000);
+  const q = new URLSearchParams({ start: start.toISOString(), end: end.toISOString() });
+
+  return get<SolarWindPoint[]>(`/v1/solar-wind?${q}`);
+}

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getKpForecast, getSolarWindLatest } from "@/lib/api/client";
+import { getKpForecast, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -25,5 +25,16 @@ describe("api client", () => {
   it("never throws when the network fails", async () => {
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("fetch failed")));
     expect(await getSolarWindLatest()).toEqual({ ok: false });
+  });
+});
+
+describe("solar wind window", () => {
+  it("asks for exactly the requested number of hours", async () => {
+    const f = vi.fn<typeof fetch>(() => Promise.resolve(Response.json([])));
+    vi.stubGlobal("fetch", f);
+    await getSolarWindWindow(24);
+    const u = new URL(String(f.mock.calls[0]![0]));
+    const span = Date.parse(u.searchParams.get("end")!) - Date.parse(u.searchParams.get("start")!);
+    expect(span).toBe(24 * 3600 * 1000);
   });
 });
