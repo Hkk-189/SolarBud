@@ -46,3 +46,28 @@ def test_solar_wind_range_limits():  # Review Focus 5
 
 def test_health():
     assert client().get("/health").json() == {"status": "ok"}
+
+
+def _alert_client(status):
+    app = create_app()
+
+    async def get():
+        return status
+
+    app.dependency_overrides[deps.current_alert] = lambda: get
+    return TestClient(app)
+
+
+def test_alert_current_without_state_is_none():
+    r = _alert_client(None).get("/v1/alerts/current")
+    assert r.status_code == 200
+    assert r.json() == {"level": "none", "since": None, "last_event": None}
+
+
+def test_alert_current_warning():
+    t = datetime(2024, 5, 10, 18, 5, tzinfo=UTC)
+    ev = {"issued_at": t, "level": "warning", "p_exceed": 0.9, "observed_kp": 3.0}
+    r = _alert_client({"level": "warning", "since": t, "last_event": ev}).get("/v1/alerts/current")
+    body = r.json()
+    assert body["level"] == "warning" and body["since"] == "2024-05-10T18:05:00Z"
+    assert body["last_event"]["issued_at"] == "2024-05-10T18:05:00Z"

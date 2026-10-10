@@ -1,13 +1,24 @@
 """Persona message templates. Pure: event in, text out. Local time + UTC in every message."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
+import pandas as pd
 
 from app.alerts.engine import AlertConfig, AlertEvent, Level
 from app.core.constants import HORIZONS_H
 
 SWPC_URL = "https://www.swpc.noaa.gov"
 FOOTER = f"Not an official forecast. See {SWPC_URL}"
+
+
+def drivers(frame: pd.DataFrame, at: datetime) -> list[str]:
+    """Latest valid Bz and speed at or before `at` (OMNI 5-min or live 1-min frame)."""
+    ok = frame.loc[: pd.Timestamp(at), ["bz_gsm_nt", "speed_kms"]].dropna()
+    if ok.empty:
+        return []
+    row = ok.iloc[-1]
+    return [f"Bz {row.bz_gsm_nt:.0f} nT", f"solar wind {row.speed_kms:.0f} km/s"]
 
 
 def _confidence(p: float) -> str:
