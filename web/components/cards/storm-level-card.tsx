@@ -12,13 +12,19 @@ export function StormLevelCard({
 }) {
   const h1 = result.ok ? result.data.horizons.find((h) => h.horizon_h === 1) : undefined;
 
+  const caveat = !result.ok
+    ? "no current forecast, cannot confirm"
+    : result.data.data_stale
+      ? "data stale, alerts may be suppressed"
+      : null;
+
   return (
     <Card title="Storm level">
       <GLevelBadge kp={h1 ? h1.p50 : Number.NaN} />
       <p className="mt-3 text-sm text-muted">
         {h1 ? "Forecast, +1 h (median Kp)" : "No forecast available"}
       </p>
-      <AlertLevel result={alert} stale={result.ok && result.data.data_stale} />
+      <AlertLevel result={alert} caveat={caveat} />
     </Card>
   );
 }

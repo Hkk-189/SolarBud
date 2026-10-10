@@ -51,7 +51,7 @@ describe("StormLevelCard", () => {
     ["none", "No active alert"],
     ["watch", "Watch"],
   ])("writes out alert level %s as %s", (level, text) => {
-    render(<StormLevelCard result={down} alert={{ ok: true, data: { level, since: null } }} />);
+    render(<StormLevelCard result={{ ok: true, data: forecast }} alert={{ ok: true, data: { level, since: null } }} />);
     expect(screen.getByText(text)).toBeTruthy();
   });
   it("shows since in UTC", () => {
@@ -68,6 +68,20 @@ describe("StormLevelCard", () => {
     render(<StormLevelCard result={{ ok: true, data: forecast }} alert={quiet} />);
     expect(screen.getByText("No active alert")).toBeTruthy();
     expect(screen.queryByText(/stale/i)).toBeNull();
+  });
+  it("never reads a missing forecast as a plain no active alert", () => {
+    render(<StormLevelCard result={down} alert={quiet} />);
+    expect(screen.queryByText("No active alert")).toBeNull();
+    expect(screen.getByText(/no active alert reported/i).textContent).toMatch(/no current forecast/i);
+  });
+  it.each([
+    ["stale", { ok: true, data: { ...forecast, data_stale: true } } as const, /stale/i],
+    ["missing", down, /no current forecast/i],
+  ])("qualifies all clear when the forecast is %s", (_name, result, caveat) => {
+    const clear = { ok: true, data: { level: "all_clear", since: null } } as const;
+    render(<StormLevelCard result={result} alert={clear} />);
+    expect(screen.queryByText("All clear")).toBeNull();
+    expect(screen.getByText(/all clear/i).textContent).toMatch(caveat);
   });
   it("shows the G badge and Warning together for a live forecast", () => {
     const warn = { ok: true, data: { level: "warning", since: null } } as const;
