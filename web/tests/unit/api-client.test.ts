@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getAlertCurrent, getKpForecast, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
+import { getAlertCurrent, getKpForecast, getKpObserved, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -50,5 +50,15 @@ describe("solar wind window", () => {
     const u = new URL(String(f.mock.calls[0]![0]));
     const span = Date.parse(u.searchParams.get("end")!) - Date.parse(u.searchParams.get("start")!);
     expect(span).toBe(24 * 3600 * 1000);
+  });
+
+  it("asks for 3 h more Kp history so the bin straddling the window start is included", async () => {
+    const f = vi.fn<typeof fetch>(() => Promise.resolve(Response.json([])));
+    vi.stubGlobal("fetch", f);
+    await getKpObserved(24);
+    const u = new URL(String(f.mock.calls[0]![0]));
+    expect(u.pathname).toBe("/v1/kp");
+    const span = Date.parse(u.searchParams.get("end")!) - Date.parse(u.searchParams.get("start")!);
+    expect(span).toBe(27 * 3600 * 1000);
   });
 });

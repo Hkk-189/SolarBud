@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { KpBandChart } from "@/components/charts/kp-band-chart";
 import type { KpForecast } from "@/lib/api/client";
@@ -23,19 +23,32 @@ const wrap = (ui: React.ReactNode) => (
   <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>
 );
 
-it("draws the band from the server-provided forecast", () => {
-  render(wrap(<KpBandChart initial={base} Chart={FakeChart} />));
+const observed = [{ time: "2024-05-10T15:00:00Z", kp: 4 }];
+
+it("draws the band from the server-provided forecast and names the G1 line", () => {
+  render(wrap(<KpBandChart initial={base} initialObserved={observed} Chart={FakeChart} />));
   expect(screen.getAllByTestId("chart")).toHaveLength(1);
   expect(screen.queryByText(/stale/i)).toBeNull();
+  expect(screen.getByText(/G1/)).toBeTruthy();
 });
 
 it("warns when the forecast was made from stale L1 data", () => {
-  render(wrap(<KpBandChart initial={{ ...base, data_stale: true }} Chart={FakeChart} />));
+  render(wrap(<KpBandChart initial={{ ...base, data_stale: true }} initialObserved={observed} Chart={FakeChart} />));
   expect(screen.getByText(/stale/i)).toBeTruthy();
+});
+
+it("keeps the forecast chart when observed Kp is missing and its fetch fails", async () => {
+  const f = vi.fn(() => Promise.resolve(new Response("{}", { status: 503 })));
+  vi.stubGlobal("fetch", f);
+  const { container } = render(wrap(<KpBandChart initial={base} initialObserved={null} Chart={FakeChart} />));
+  await vi.waitFor(() => expect(f).toHaveBeenCalledWith("/api/kp-observed"), { timeout: 4000 });
+  await new Promise((r) => setTimeout(r, 1500)); // let the one retry fail too
+  expect(within(container).getAllByTestId("chart")).toHaveLength(1);
+  expect(within(container).queryByText(/unavailable/i)).toBeNull();
 });
 
 it("says so when there is no forecast", async () => {
   vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 503 })));
-  render(wrap(<KpBandChart initial={null} Chart={FakeChart} />));
+  render(wrap(<KpBandChart initial={null} initialObserved={null} Chart={FakeChart} />));
   expect(await screen.findByText(/forecast unavailable/i, {}, { timeout: 4000 })).toBeTruthy();
 });

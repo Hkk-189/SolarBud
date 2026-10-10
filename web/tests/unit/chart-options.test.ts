@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { lineOption } from "@/lib/chart-options";
 import type { SolarWindPoint } from "@/lib/api/client";
 
-const COLORS = { line: "#423d38", text: "#6f665d", grid: "#e3e0dd", band: "#fe6e00" };
+const COLORS = { line: "#423d38", text: "#6f665d", grid: "#e3e0dd", band: "#fe6e00", g1: "#874b00" };
 
 const pts: SolarWindPoint[] = [
   { time: "2024-05-10T18:00:00Z", speed_kms: 500, bz_gsm_nt: -5 },
