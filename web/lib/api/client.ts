@@ -2,6 +2,8 @@ import type { components } from "./schema";
 
 export type KpForecast = components["schemas"]["KpForecast"];
 
+export type AlertStatus = components["schemas"]["AlertStatus"];
+
 export type SolarWindPoint = components["schemas"]["SolarWindPoint"];
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false };
@@ -29,6 +31,8 @@ async function get<T>(path: string): Promise<ApiResult<T>> {
 }
 
 export const getKpForecast = () => get<KpForecast>("/v1/forecast/kp");
+
+export const getAlertCurrent = () => get<AlertStatus>("/v1/alerts/current");
 
 export const getSolarWindLatest = () => get<SolarWindPoint>("/v1/solar-wind/latest");
 

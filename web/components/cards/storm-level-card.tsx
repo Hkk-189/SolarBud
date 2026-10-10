@@ -1,8 +1,15 @@
 import { Card } from "./card";
 import { GLevelBadge } from "./g-level-badge";
-import type { ApiResult, KpForecast } from "@/lib/api/client";
+import { AlertLevel } from "./alert-level";
+import type { AlertStatus, ApiResult, KpForecast } from "@/lib/api/client";
 
-export function StormLevelCard({ result }: { result: ApiResult<KpForecast> }) {
+export function StormLevelCard({
+  result,
+  alert,
+}: {
+  result: ApiResult<KpForecast>;
+  alert: ApiResult<AlertStatus>;
+}) {
   const h1 = result.ok ? result.data.horizons.find((h) => h.horizon_h === 1) : undefined;
 
   return (
@@ -11,6 +18,7 @@ export function StormLevelCard({ result }: { result: ApiResult<KpForecast> }) {
       <p className="mt-3 text-sm text-muted">
         {h1 ? "Forecast, +1 h (median Kp)" : "No forecast available"}
       </p>
+      <AlertLevel result={alert} />
     </Card>
   );
 }

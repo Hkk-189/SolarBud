@@ -6,6 +6,7 @@ test("home shows the shell, an empty state and the disclaimer", async ({ page })
   await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link")).toHaveCount(7);
   await expect(page.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("No data", { exact: true })).toBeVisible();
+  await expect(page.getByText("Alert status unavailable")).toBeVisible();
   await expect(page.getByText("Solar wind history unavailable.")).toBeVisible();
   await expect(page.getByRole("link", { name: "NOAA SWPC" })).toHaveAttribute(
     "href",

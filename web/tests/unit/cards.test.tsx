@@ -33,14 +33,37 @@ const wind: Wind = {
 const down = { ok: false } as const;
 
 describe("StormLevelCard", () => {
+  const quiet = { ok: true, data: { level: "none", since: null } } as const;
+
   it("shows the +1 h p50 level labelled as forecast", () => {
-    render(<StormLevelCard result={{ ok: true, data: forecast }} />);
+    render(<StormLevelCard result={{ ok: true, data: forecast }} alert={quiet} />);
     expect(screen.getByText("G2")).toBeTruthy();
     expect(screen.getByText(/forecast, \+1 h/i)).toBeTruthy();
   });
   it("shows No data when the API is down", () => {
-    render(<StormLevelCard result={down} />);
+    render(<StormLevelCard result={down} alert={down} />);
     expect(screen.getByText("No data")).toBeTruthy();
+  });
+  it.each([
+    ["warning", "Warning"],
+    ["active", "Active"],
+    ["all_clear", "All clear"],
+    ["none", "No active alert"],
+    ["watch", "Watch"],
+  ])("writes out alert level %s as %s", (level, text) => {
+    render(<StormLevelCard result={down} alert={{ ok: true, data: { level, since: null } }} />);
+    expect(screen.getByText(text)).toBeTruthy();
+  });
+  it("shows since in UTC", () => {
+    const data = { level: "warning", since: "2026-10-10T05:05:00Z" };
+    render(<StormLevelCard result={down} alert={{ ok: true, data }} />);
+    expect(screen.getByText("Since 2026-10-10 05:05 UTC")).toBeTruthy();
+  });
+  it("says alert status is unavailable, never no alert, and keeps the G badge", () => {
+    render(<StormLevelCard result={{ ok: true, data: forecast }} alert={down} />);
+    expect(screen.getByText("Alert status unavailable")).toBeTruthy();
+    expect(screen.getByText("G2")).toBeTruthy();
+    expect(screen.queryByText("No active alert")).toBeNull();
   });
 });
 
