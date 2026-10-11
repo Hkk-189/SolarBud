@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { KpForecastCard } from "@/components/cards/kp-forecast-card";
 import { SolarWindCard } from "@/components/cards/solar-wind-card";
 import { StormLevelCard } from "@/components/cards/storm-level-card";
+import { EXPLAIN } from "@/lib/explanations";
 import type { components } from "@/lib/api/schema";
 
 afterEach(cleanup);
@@ -42,6 +43,10 @@ describe("StormLevelCard", () => {
     expect(screen.getByText("G2")).toBeTruthy();
     expect(screen.getByText(/forecast, \+1 h/i)).toBeTruthy();
   });
+  it("explains itself in plain language", () => {
+    const { container } = render(<StormLevelCard nowMs={NOW} result={{ ok: true, data: forecast }} alert={quiet} />);
+    expect(within(container).getByText(EXPLAIN.stormLevel.summary)).toBeTruthy();
+  });
   it("shows No data when the API is down", () => {
     render(<StormLevelCard nowMs={NOW} result={down} alert={down} />);
     expect(screen.getByText("No data")).toBeTruthy();
@@ -63,7 +68,7 @@ describe("StormLevelCard", () => {
   });
   it.each([
     ["none", /no active alert/i],
-    ["all_clear", /all clear/i],
+    ["all_clear", /^all clear/i],
   ])("qualifies %s when the forecast is over 15 minutes old", (level, text) => {
     const later = Date.parse("2026-10-04T12:20:01Z");
     render(
@@ -104,7 +109,7 @@ describe("StormLevelCard", () => {
     const clear = { ok: true, data: { level: "all_clear", since: null } } as const;
     render(<StormLevelCard nowMs={NOW} result={result} alert={clear} />);
     expect(screen.queryByText("All clear")).toBeNull();
-    expect(screen.getByText(/all clear/i).textContent).toMatch(caveat);
+    expect(screen.getByText(/^all clear/i).textContent).toMatch(caveat);
   });
   it("shows the G badge and Warning together for a live forecast", () => {
     const warn = { ok: true, data: { level: "warning", since: null } } as const;
@@ -130,6 +135,17 @@ describe("KpForecastCard", () => {
     expect(screen.getByText(/2026-10-04 12:00 UTC/)).toBeTruthy();
     expect(screen.queryByText(/data stale/i)).toBeNull();
   });
+  it("explains itself and uses plain column names with the quantile kept for assistive tech", () => {
+    const { container } = render(<KpForecastCard result={{ ok: true, data: forecast }} />);
+    const view = within(container);
+    expect(view.getByText(EXPLAIN.kpForecast.summary)).toBeTruthy();
+
+    for (const [name, p] of [["Low", "p10"], ["Likely", "p50"], ["High", "p90"]]) {
+      const th = view.getByRole("columnheader", { name: `${name} (${p})` });
+      expect(th.getAttribute("title")).toBe(p);
+      expect(within(th).getByText(`(${p})`).className).toContain("sr-only");
+    }
+  });
   it("shows a stale notice", () => {
     render(<KpForecastCard result={{ ok: true, data: { ...forecast, data_stale: true } }} />);
     expect(screen.getByRole("status").textContent).toMatch(/data stale/i);
@@ -148,6 +164,10 @@ describe("SolarWindCard", () => {
     expect(screen.getByText("km/s")).toBeTruthy();
     expect(screen.getByText("-9.3")).toBeTruthy();
     expect(screen.getByText(/2026-10-04 11:58 UTC/)).toBeTruthy();
+  });
+  it("explains itself in plain language", () => {
+    const { container } = render(<SolarWindCard result={{ ok: true, data: wind }} />);
+    expect(within(container).getByText(EXPLAIN.solarWindNow.summary)).toBeTruthy();
   });
   it("shows dashes for missing fields", () => {
     render(<SolarWindCard result={{ ok: true, data: { time: wind.time } }} />);

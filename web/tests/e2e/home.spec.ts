@@ -29,3 +29,27 @@ for (const colorScheme of ["light", "dark"] as const) {
     await ctx.close();
   });
 }
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`phone width with every explanation open has no horizontal scroll (${colorScheme})`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, colorScheme });
+    const page = await ctx.newPage();
+    await page.goto("http://localhost:3000/");
+
+    const summaries = page.getByText("What does this mean?");
+    const count = await summaries.count();
+
+    expect(count).toBeGreaterThanOrEqual(3);
+
+    for (let i = 0; i < count; i++) await summaries.nth(i).click();
+
+    await expect(page.locator("details[open]")).toHaveCount(count);
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+
+    expect(overflow).toBeLessThanOrEqual(0);
+    await ctx.close();
+  });
+}
