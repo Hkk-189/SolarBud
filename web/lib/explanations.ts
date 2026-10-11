@@ -49,3 +49,39 @@ export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpC
     ],
   },
 };
+
+export const COMING_SOON: Record<
+  "aurora" | "gnss" | "cme" | "backtest" | "models" | "api-docs",
+  { title: string; body: string; phase: string }
+> = {
+  aurora: {
+    title: "Aurora",
+    body: "When and where the aurora may be visible, based on the Kp forecast, with honest odds for low latitudes like India.",
+    phase: "Phase 4",
+  },
+  gnss: {
+    title: "GNSS",
+    body: "A Low, Moderate, High or Severe risk timeline for GPS and RTK work over the next 3 days, with plain advice.",
+    phase: "Phase 4",
+  },
+  cme: {
+    title: "CME tracker",
+    body: "Solar eruptions (CMEs) heading towards Earth and when they are predicted to arrive.",
+    phase: "Phase 3",
+  },
+  backtest: {
+    title: "Backtests",
+    body: "How SolarBud's forecasts and alerts performed on five well-known past storms.",
+    phase: "Phase 4",
+  },
+  models: {
+    title: "Models",
+    body: "What the forecast model is, how it was trained and how accurate it is.",
+    phase: "Phase 4",
+  },
+  "api-docs": {
+    title: "API docs",
+    body: "How to fetch SolarBud's forecasts from its public API.",
+    phase: "Phase 4",
+  },
+};

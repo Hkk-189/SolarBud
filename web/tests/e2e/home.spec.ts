@@ -54,3 +54,27 @@ for (const colorScheme of ["light", "dark"] as const) {
     await ctx.close();
   });
 }
+
+for (const [href, title] of [
+  ["/aurora", "Aurora"],
+  ["/gnss", "GNSS"],
+  ["/cme", "CME tracker"],
+  ["/backtest", "Backtests"],
+  ["/models", "Models"],
+  ["/api-docs", "API docs"],
+]) {
+  test(`${href} shows a coming-soon page`, async ({ page }) => {
+    const res = await page.goto(href);
+
+    expect(res?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: title })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+}
+
+test("an unknown path is still a 404", async ({ page }) => {
+  expect((await page.goto("/foo"))?.status()).toBe(404);
+});
