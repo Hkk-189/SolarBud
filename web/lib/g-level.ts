@@ -2,7 +2,7 @@
 // 1e-3 tolerance because Kp thirds are stored rounded. Keep the two in sync.
 const KP_TOL = 1e-3;
 
-const gStart = (n: number) => n + 4 - 1 / 3;
+export const gStart = (n: number) => n + 4 - 1 / 3;
 
 /** Kp 5- (4.667), where G1 starts: the chart's threshold line. */
 export const G1_KP = gStart(1);

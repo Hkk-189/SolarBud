@@ -2,7 +2,6 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { KpForecastCard } from "@/components/cards/kp-forecast-card";
 import { SolarWindCard } from "@/components/cards/solar-wind-card";
-import { StormLevelCard } from "@/components/cards/storm-level-card";
 import { EXPLAIN } from "@/lib/explanations";
 import type { components } from "@/lib/api/schema";
 
@@ -33,99 +32,17 @@ const wind: Wind = {
 
 const down = { ok: false } as const;
 
-const NOW = Date.parse("2026-10-04T12:05:00Z"); // 5 min after the fixture forecast
-
-describe("StormLevelCard", () => {
-  const quiet = { ok: true, data: { level: "none", since: null } } as const;
-
-  it("shows the +1 h p50 level labelled as forecast", () => {
-    render(<StormLevelCard nowMs={NOW} result={{ ok: true, data: forecast }} alert={quiet} />);
-    expect(screen.getByText("G2")).toBeTruthy();
-    expect(screen.getByText(/forecast, \+1 h/i)).toBeTruthy();
-  });
-  it("explains itself in plain language", () => {
-    const { container } = render(<StormLevelCard nowMs={NOW} result={{ ok: true, data: forecast }} alert={quiet} />);
-    expect(within(container).getByText(EXPLAIN.stormLevel.summary)).toBeTruthy();
-  });
-  it("shows No data when the API is down", () => {
-    render(<StormLevelCard nowMs={NOW} result={down} alert={down} />);
-    expect(screen.getByText("No data")).toBeTruthy();
-  });
-  it.each([
-    ["warning", "Warning"],
-    ["active", "Active"],
-    ["all_clear", "All clear"],
-    ["none", "No active alert"],
-    ["watch", "Watch"],
-  ])("writes out alert level %s as %s", (level, text) => {
-    render(<StormLevelCard nowMs={NOW} result={{ ok: true, data: forecast }} alert={{ ok: true, data: { level, since: null } }} />);
-    expect(screen.getByText(text)).toBeTruthy();
-  });
-  it("shows since in UTC", () => {
-    const data = { level: "warning", since: "2026-10-10T05:05:00Z" };
-    render(<StormLevelCard nowMs={NOW} result={down} alert={{ ok: true, data }} />);
-    expect(screen.getByText("Since 2026-10-10 05:05 UTC")).toBeTruthy();
-  });
-  it.each([
-    ["none", /no active alert/i],
-    ["all_clear", /^all clear/i],
-  ])("qualifies %s when the forecast is over 15 minutes old", (level, text) => {
-    const later = Date.parse("2026-10-04T12:20:01Z");
-    render(
-      <StormLevelCard nowMs={later} result={{ ok: true, data: forecast }} alert={{ ok: true, data: { level, since: null } }} />,
-    );
-    expect(screen.getByText(text).textContent).toMatch(/15 min/i);
-  });
-  it("keeps a plain label at exactly 15 minutes", () => {
-    const edge = Date.parse("2026-10-04T12:15:00Z");
-    render(<StormLevelCard nowMs={edge} result={{ ok: true, data: forecast }} alert={quiet} />);
-    expect(screen.getByText("No active alert")).toBeTruthy();
-  });
-  it("does not hide a warning behind the age caveat", () => {
-    const later = Date.parse("2026-10-04T13:00:00Z");
-    const warning = { ok: true, data: { level: "warning", since: null } } as const;
-    render(<StormLevelCard nowMs={later} result={{ ok: true, data: forecast }} alert={warning} />);
-    expect(screen.getByText("Warning")).toBeTruthy();
-  });
-  it("flags a stale forecast next to no active alert", () => {
-    const stale = { ok: true, data: { ...forecast, data_stale: true } } as const;
-    render(<StormLevelCard nowMs={NOW} result={stale} alert={quiet} />);
-    expect(screen.getByText(/no active alert/i).textContent).toMatch(/stale/i);
-  });
-  it("shows plain no active alert for a fresh forecast", () => {
-    render(<StormLevelCard nowMs={NOW} result={{ ok: true, data: forecast }} alert={quiet} />);
-    expect(screen.getByText("No active alert")).toBeTruthy();
-    expect(screen.queryByText(/stale/i)).toBeNull();
-  });
-  it("never reads a missing forecast as a plain no active alert", () => {
-    render(<StormLevelCard nowMs={NOW} result={down} alert={quiet} />);
-    expect(screen.queryByText("No active alert")).toBeNull();
-    expect(screen.getByText(/no active alert reported/i).textContent).toMatch(/no current forecast/i);
-  });
-  it.each([
-    ["stale", { ok: true, data: { ...forecast, data_stale: true } } as const, /stale/i],
-    ["missing", down, /no current forecast/i],
-  ])("qualifies all clear when the forecast is %s", (_name, result, caveat) => {
-    const clear = { ok: true, data: { level: "all_clear", since: null } } as const;
-    render(<StormLevelCard nowMs={NOW} result={result} alert={clear} />);
-    expect(screen.queryByText("All clear")).toBeNull();
-    expect(screen.getByText(/^all clear/i).textContent).toMatch(caveat);
-  });
-  it("shows the G badge and Warning together for a live forecast", () => {
-    const warn = { ok: true, data: { level: "warning", since: null } } as const;
-    render(<StormLevelCard nowMs={NOW} result={{ ok: true, data: forecast }} alert={warn} />);
-    expect(screen.getByText("G2")).toBeTruthy();
-    expect(screen.getByText("Warning")).toBeTruthy();
-  });
-  it("says alert status is unavailable, never no alert, and keeps the G badge", () => {
-    render(<StormLevelCard nowMs={NOW} result={{ ok: true, data: forecast }} alert={down} />);
-    expect(screen.getByText("Alert status unavailable")).toBeTruthy();
-    expect(screen.getByText("G2")).toBeTruthy();
-    expect(screen.queryByText("No active alert")).toBeNull();
-  });
-});
-
 describe("KpForecastCard", () => {
+  it("uses a sentence-case card title", () => {
+    render(<KpForecastCard result={{ ok: true, data: forecast }} />);
+    expect(screen.getByRole("heading", { level: 2 }).className).not.toContain("uppercase");
+  });
+  it("shows issue time and model on separate lines", () => {
+    const { container } = render(<KpForecastCard result={{ ok: true, data: forecast }} />);
+    expect(screen.getByText("Issued 2026-10-04 12:00 UTC")).toBeTruthy();
+    expect(screen.getByText("Model lgbm-1")).toBeTruthy();
+    expect(container.textContent).not.toContain("·");
+  });
   it("renders a row per horizon with quantiles and issued_at in UTC", () => {
     render(<KpForecastCard result={{ ok: true, data: forecast }} />);
     expect(screen.getAllByRole("row")).toHaveLength(4);

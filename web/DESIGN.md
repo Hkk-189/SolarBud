@@ -1,23 +1,25 @@
 ---
 version: alpha
 name: SolarBud
-description: "Warm off-white space-weather workspace with a dark frosted application shell and orange telemetry accents."
+description: "Cool-neutral space-weather workspace with a dark frosted application shell and orange telemetry accents."
 colors:
-  background: "#fcfaf7"
-  on-background: "#423d38"
-  surface: "#f3f4f6"
-  surface-soft: "#edebe9"
+  background: "#f3f6f8"
+  on-background: "#1f2a33"
+  surface: "#eaeff3"
+  surface-soft: "#e3e9ee"
   surface-elevated: "#ffffff"
-  on-surface: "#423d38"
-  on-surface-muted: "#6f665d"
-  outline: "#e3e0dd"
-  outline-strong: "#d1d5dc"
+  on-surface: "#1f2a33"
+  on-surface-muted: "#566470"
+  outline: "#d5dee5"
+  outline-strong: "#c2cdd6"
   primary: "#fe6e00"
   primary-strong: "#ff6b00"
   primary-warm: "#ffb74d"
   primary-focus: "#f97015"
   primary-fill: "#c25100"
   primary-fill-hover: "#a84500"
+  uncertainty: "#c25100"
+  dark-uncertainty: "#fe6e00"
   on-primary: "#ffffff"
   shell-base: "#000000"
   on-shell: "#ffffff"
@@ -39,54 +41,53 @@ colors:
   g4-fg: "#ffffff"
   g5-bg: "#82181a"
   g5-fg: "#ffffff"
-  dark-background: "#413830"
-  dark-surface: "#4a423a"
-  dark-on-surface: "#fafaf9"
-  dark-on-surface-muted: "#b9b3ac"
+  dark-background: "#0f1a24"
+  dark-surface: "#1a2836"
+  dark-on-surface: "#e8eef2"
+  dark-on-surface-muted: "#9db0be"
   dark-g1-line: "#fef9c2"
 typography:
   headline-xl:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "2rem"
     fontWeight: 700
     lineHeight: "2.5rem"
     letterSpacing: "-0.025em"
   headline-lg:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.5rem"
     fontWeight: 700
     lineHeight: "2rem"
   title-md:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.125rem"
     fontWeight: 700
     lineHeight: "1.75rem"
   body-lg:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: "1.5rem"
   body-md:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: "1.25rem"
   body-sm:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.8125rem"
     fontWeight: 700
     lineHeight: "1rem"
   label-md:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 500
     lineHeight: "1.25rem"
   label-sm:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 600
     lineHeight: "1rem"
-    letterSpacing: "0.05em"
   code-sm:
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
     fontSize: "0.875rem"
@@ -97,6 +98,7 @@ rounded:
   sm: "6px"
   md: "8px"
   lg: "12px"
+  card: "10px"
   pill: "9999px"
 spacing:
   xs: "4px"
@@ -181,7 +183,7 @@ components:
     backgroundColor: "{colors.surface-elevated}"
     textColor: "{colors.on-background}"
     typography: "{typography.body-md}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.card}"
     padding: "{spacing.xl}"
   chart-bar:
     backgroundColor: "rgba(254, 110, 0, 0.60)"
@@ -205,19 +207,19 @@ components:
 ---
 
 ## Overview
-SolarBud is a space-weather forecast dashboard: it shows the current geomagnetic storm level, the Kp forecast with its uncertainty, and the live solar wind, and it explains alerts. Its interface splits its personality into two layers. The workspace itself is light, warm, and document-like: an off-white canvas, neutral cards, restrained borders, and dense but calm content. Around that workspace sits a darker application shell with a frosted-glass feel: black panels at 70% opacity, soft blur, thin white borders, and white navigation text. The product should feel like a modern operations console that borrows a little from premium instrument-panel UI without becoming futuristic chrome.
+SolarBud is a space-weather forecast dashboard: it shows the current geomagnetic storm level, the Kp forecast with its uncertainty, and the live solar wind, and it explains alerts. Its interface splits its personality into two layers. The workspace itself is light, cool, and document-like: a pale blue-grey canvas, neutral cards, restrained borders, and dense but calm content. Around that workspace sits a darker application shell with a frosted-glass feel: black panels at 70% opacity, soft blur, thin white borders, and white navigation text. The product should feel like a modern operations console that borrows a little from premium instrument-panel UI without becoming futuristic chrome.
 
 The emotional target is focused, technical, and slightly premium rather than playful. The UI is not flat-white enterprise software, but it also is not neon cyberpunk. It lives in the middle: calm neutrals for reading and scanning, with orange used as the dominant signal for action, telemetry, hover states, focus states, and brand presence.
 
 Default presentation is light mode. Dark mode exists, but the product identity is still anchored in the light workspace with dark shell framing.
 
 ## Colors
-The visual identity revolves around warm neutrals plus a concentrated orange band.
+The visual identity revolves around cool neutrals plus a concentrated orange band.
 
-- **Background (`#FCFAF7`):** The primary page canvas. It should read as warm paper or light stone rather than stark white.
-- **Surface (`#F3F4F6`) and Surface Soft (`#EDEBE9`):** Secondary neutrals for app backgrounds, muted panels, table fills, and low-emphasis containers.
-- **Foreground (`#423D38`):** Main copy color. It is dark brown-gray rather than charcoal black, which keeps the UI warmer and softer.
-- **Muted Foreground (`#6F665D`):** Metadata, descriptions, secondary labels, and quiet table text. It is slightly darker than the original design's value so it keeps 4.5:1 contrast on Surface Soft.
+- **Background (`#F3F6F8`):** The primary page canvas, a pale cool grey. Panels sit on it in white (`#FFFFFF`) with a `#D5DEE5` rule. Dark mode: background `#0F1A24`, panel `#1A2836`, ink `#E8EEF2`, muted `#9DB0BE`, rule `#2E4152`.
+- **Surface (`#EAEFF3`) and Surface Soft (`#E3E9EE`):** Secondary neutrals for app backgrounds, muted panels, table fills, and low-emphasis containers.
+- **Foreground (`#1F2A33`):** Main copy color, a dark blue-slate ink.
+- **Muted Foreground (`#566470`):** Metadata, descriptions, secondary labels, and quiet table text. It is slightly darker than the original design's value so it keeps 4.5:1 contrast on Surface Soft.
 - **Primary Orange (`#FE6E00` / `#FF6B00`):** The brand and signal color. Use it for chart bars and bands, icons, borders, focus rings, hover glow and brand presence.
 - **Primary Fill (`#C25100`, hover `#A84500`):** Orange **behind text**. White on `#FE6E00` is only about 2.8:1, which fails WCAG AA, so filled buttons and the active navigation item use this darker orange (about 4.7:1 with white). Table header text uses the hover shade.
 - **Warm Orange (`#FFB74D`):** Gradient or brand warmth. This should be paired with the core orange, not used alone as the main action color.
@@ -232,19 +234,20 @@ The visual identity revolves around warm neutrals plus a concentrated orange ban
   - G5: dark red (`#82181A`, white text)
 
   Every pair meets 4.5:1. The badge always shows the text label (for example "G3") as well as the color, so meaning never depends on color alone.
+- **Uncertainty orange:** orange for forecast uncertainty (the ruler whiskers) uses a darker shade on light backgrounds so the range stays visible.
 
 Orange should be visually dominant, but not everywhere. The product works because most surfaces stay neutral and let orange carry state, motion, and emphasis.
 
 ## Typography
-The system uses the browser's default sans stack rather than a branded webfont. That matters: the voice is practical, fast-loading, and operational, not editorial or highly stylized.
+One family: Archivo (variable weight and width axes), loaded with `next/font/google` and self-hosted at build (ADR-0007). It gives the UI a firm, technical voice without an editorial feel.
 
-- **Primary typeface:** `ui-sans-serif, system-ui, sans-serif`.
-- **Monospace:** `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`. Use it for values such as Kp, speed and timestamps.
-- **Page headlines:** Use bold weights and compact hierarchy. The main page title sits at `1.5rem` with strong weight rather than oversized hero typography.
-- **Operational labels:** Small uppercase labels, especially in cards and tables, rely on wider tracking to feel structured and machine-like.
+- **Primary typeface:** `Archivo, ui-sans-serif, system-ui, sans-serif` (`--font-sans`).
+- **Numbers:** Archivo with `tabular-nums` so columns align. No monospace for ordinary text or values; `--font-mono` stays defined but unused for UI text.
+- **Page headlines:** Use bold weights and compact hierarchy. Other page titles sit at `1.5rem` with strong weight. The home page's status sentence is a deliberate large headline (about `2.1rem`, Archivo width 112, weight 650, about 30ch).
+- **Labels and card titles:** Sentence case, no tracking. Card titles are `0.95rem` semibold in the foreground colour.
 - **Body copy:** Standard UI sizing with moderate line height. Text should stay compact enough for dashboards.
 
-Typography should feel crisp and legible first. Avoid decorative fonts, wide-display faces, or soft rounded consumer-product typography.
+Typography should feel crisp and legible first. Avoid decorative fonts or soft rounded consumer-product typography.
 
 ## Layout & Spacing
 The system is built on a familiar 4px Tailwind rhythm, but the page composition behaves more like a dashboard shell around a centered content document.
@@ -262,18 +265,18 @@ This is not a sparse marketing layout. Density is moderate, but spacing is consi
 Depth comes from two different strategies depending on the layer.
 
 - **Application shell:** The sidebar and header use blur plus transparency. They should feel like dark glass laid over the workspace.
-- **Workspace cards:** Cards use subtle borders and standard UI shadows, but remain visually quiet. They should not look glossy or heavy.
+- **Workspace cards:** Panels are flat: a white fill, a 1px rule and no shadow. They should not look glossy or heavy.
 - **Dialogs, dropdowns, and sheets:** These can use stronger shadows than normal cards, but should stay within the same neutral/orange system.
 - **Charts and telemetry bars:** Orange fills use opacity rather than full saturation so they integrate with the quiet surrounding panels.
 
-The product should never feel flat, but the depth model is restrained. Use blur for chrome, soft shadows for surfaces, and border definition everywhere else.
+The product should never feel flat, but the depth model is restrained. Use blur for chrome, shadows only for floating layers, and border definition everywhere else.
 
 ## Shapes
 Corner treatment is consistent and slightly softened, but never bubbly.
 
 - **Base control radius:** `8px`.
 - **Tight controls / inputs:** `6px`.
-- **Cards:** `12px`.
+- **Cards:** `10px`.
 - **Pills and badges:** fully rounded.
 - **Chrome panels:** square-edged at the macro level, with rounding reserved for internal interactive elements.
 
@@ -295,13 +298,16 @@ There are two input personalities:
 Both should preserve clean rectangular geometry and avoid deep inset styling.
 
 ### Cards
-Most analytical content sits in neutral cards with soft shadows and thin borders. Cards are readable first and decorative second. Metric cards, chart cards, and table cards should all feel like members of the same quiet surface family.
+Most analytical content sits in flat neutral panels with a thin rule and no shadow. Cards are readable first and decorative second. Metric cards, chart cards, and table cards should all feel like members of the same quiet surface family.
 
 ### Tables
 Tables use the neutral base: thin borders, compact rows, and a header with a faint orange tint and Primary Fill (hover shade) label text.
 
 ### Storm-level badges
-Storm badges are the most important semantic cue in the product. They are pills using the G0 to G5 pairs above, carry the level text ("G0" to "G5"), and show "No data" in a neutral style when the level is unknown.
+G colors with the G label written are the only way severity is shown. On the home page they appear on the ruler's band strip and in the Kp table badges. Storm badges are pills using the G0 to G5 pairs above, carry the level text ("G0" to "G5"), and show "No data" in a neutral style when the level is unknown.
+
+### Home hero and storm ruler
+Band edges are the G thresholds (G1 = Kp 5- = 4.667). Whiskers are p10 to p90 in `--uncertainty`, dots are p50 in ink. The observed (Now) dot has no whisker and expires after 6 hours. One 300 ms whisker animation plays, and it respects reduced motion. Below `lg` the G5 label sits outside the strip.
 
 ### Charts
 Charts always show units on their axes, offer a UTC / local-time toggle, and draw forecast uncertainty (the p10 to p90 band) as a translucent orange area at 60% opacity with the median line on top. Chart colors outside orange stay within the neutral and semantic palette.
@@ -310,17 +316,17 @@ Charts always show units on their axes, offer a UTC / local-time toggle, and dra
 Every page ends with the disclaimer "Not an official forecast. See NOAA SWPC", linked to https://www.swpc.noaa.gov.
 
 ## Do's and Don'ts
-- Do keep the primary experience light, warm, and operational.
+- Do keep the primary experience light, cool, and operational.
 - Do use the dark frosted shell as a framing device around the workspace.
 - Do let orange drive action, hover, focus, telemetry, and brand emphasis.
 - Do put white text only on Primary Fill, never on the bright brand orange.
-- Do preserve compact system-sans typography and restrained spacing.
+- Do preserve compact Archivo typography, `tabular-nums` for numbers, and restrained spacing.
 - Do use white or translucent white inside the shell rather than warm gray text.
 - Do keep analytical cards quiet so charts, labels, and findings can stand out.
 
-- Don't replace the warm neutrals with pure white and cool grays.
+- Don't replace the cool neutrals with pure white pages or warm beige.
 - Don't introduce additional saturated brand colors beyond the established orange and semantic palette.
 - Don't use the brand orange for storm severity.
 - Don't turn the entire product into a dark dashboard; only the chrome should feel like dark glass by default.
-- Don't make every card solid orange, heavily tinted, or dramatically shadowed.
-- Don't swap in trendy geometric or editorial fonts; the system should remain practical and native-feeling.
+- Don't make every card solid orange or heavily tinted, and don't put shadows on panels.
+- Don't use ALL-CAPS tracked titles or monospace for ordinary text and numbers, and don't add a second typeface.

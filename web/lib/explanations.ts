@@ -6,12 +6,12 @@ export interface Explanation {
 export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpChart" | "solarWindCharts", Explanation> = {
   stormLevel: {
     summary:
-      "How disturbed Earth's magnetic field is expected to be in the next hour, on NOAA's scale from G0 (quiet) to G5 (extreme).",
+      "Where Earth's magnetic field is now and is forecast to be over the next 6 hours, on NOAA's scale from G0 (quiet) to G5 (extreme).",
     details: [
       "A storm starts at G1, which is Kp 5- (about 4.7) or more. Each step up is a stronger storm.",
       "Storms can reduce GPS accuracy and disturb radio and power grids, and they push the aurora closer to the equator.",
       "Warning means the forecast showed a G1 or stronger storm as likely within 6 hours; Active means one is happening now; All clear means the storm or the warning is over.",
-      "The badge shows the next hour; a Warning looks 6 hours ahead, so a Warning can appear next to G0.",
+      "Each dot is the likely value and the orange bar the range we expect it to fall in. A warning looks 6 hours ahead, so it can appear while the dots are still in G0.",
       "From India, the aurora is visible only in extreme storms, such as the one seen from Ladakh in May 2024.",
     ],
   },

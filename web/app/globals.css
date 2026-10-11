@@ -3,20 +3,21 @@
 /* Tokens come from DESIGN.md. Light is the default; dark overrides follow the OS setting unless
    the user forces a theme with data-theme. The two dark blocks must stay identical (tested). */
 :root {
-  --background: #fcfaf7;
-  --foreground: #423d38;
-  --surface: #f3f4f6;
-  --surface-soft: #edebe9;
+  --background: #f3f6f8;
+  --foreground: #1f2a33;
+  --surface: #eaeff3;
+  --surface-soft: #e3e9ee;
   --surface-elevated: #ffffff;
-  --muted: #6f665d;
-  --outline: #e3e0dd;
-  --outline-strong: #d1d5dc;
+  --muted: #566470;
+  --outline: #d5dee5;
+  --outline-strong: #c2cdd6;
   --primary: #fe6e00;
   --primary-strong: #ff6b00;
   --primary-warm: #ffb74d;
   --primary-focus: #f97015;
   --primary-fill: #c25100;
   --primary-fill-hover: #a84500;
+  --uncertainty: #c25100; /* range whiskers: darker orange on light backgrounds for 3:1 */
   --on-primary: #ffffff;
   --success: #00c758;
   --warning: #edb200;
@@ -38,39 +39,40 @@
   --shell-border: rgba(255, 255, 255, 0.1);
   --on-shell: #ffffff;
   --on-shell-muted: rgba(255, 255, 255, 0.7);
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --background: #413830;
-    --foreground: #fafaf9;
-    --surface: #4a423a;
-    --surface-soft: #4a423a;
-    --surface-elevated: #4a423a;
-    --muted: #b9b3ac;
-    --outline: #5c5249;
-    --outline-strong: #6d6258;
+    --background: #0f1a24;
+    --foreground: #e8eef2;
+    --surface: #1a2836;
+    --surface-soft: #213243;
+    --surface-elevated: #1a2836;
+    --muted: #9db0be;
+    --outline: #2e4152;
+    --outline-strong: #405569;
     --success: #00c758;
     --warning: #edb200;
     --danger: #fb2c36;
     --g1-line: #fef9c2;
+    --uncertainty: #fe6e00;
   }
 }
 
 :root[data-theme="dark"] {
-  --background: #413830;
-  --foreground: #fafaf9;
-  --surface: #4a423a;
-  --surface-soft: #4a423a;
-  --surface-elevated: #4a423a;
-  --muted: #b9b3ac;
-  --outline: #5c5249;
-  --outline-strong: #6d6258;
+  --background: #0f1a24;
+  --foreground: #e8eef2;
+  --surface: #1a2836;
+  --surface-soft: #213243;
+  --surface-elevated: #1a2836;
+  --muted: #9db0be;
+  --outline: #2e4152;
+  --outline-strong: #405569;
   --success: #00c758;
   --warning: #edb200;
   --danger: #fb2c36;
   --g1-line: #fef9c2;
+  --uncertainty: #fe6e00;
 }
 
 @theme inline {
@@ -82,14 +84,15 @@
   --color-muted: var(--muted);
   --color-outline: var(--outline);
   --color-primary: var(--primary);
+  --color-uncertainty: var(--uncertainty);
   --color-primary-fill: var(--primary-fill);
   --color-primary-fill-hover: var(--primary-fill-hover);
   --color-on-primary: var(--on-primary);
   --color-focus: var(--primary-focus);
   --radius-control: 8px;
   --radius-input: 6px;
-  --radius-card: 12px;
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 10px;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -111,4 +114,25 @@ body {
 :focus-visible {
   outline: 2px solid var(--primary-focus);
   outline-offset: 2px;
+}
+
+/* The ruler's one motion moment: whiskers grow out from their p50 dot once on first paint. */
+@keyframes ruler-extend {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.ruler-whisker {
+  animation: ruler-extend 300ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ruler-whisker {
+    animation: none;
+  }
 }

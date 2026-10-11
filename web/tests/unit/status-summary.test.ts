@@ -85,8 +85,11 @@ describe("statusSummary", () => {
     expect(statusSummary(forecast([2, 3]), alert("none"), NOW)).toBe(QUIET);
   });
 
-  it("is quiet when the alert is down and the forecast is quiet", () => {
-    expect(statusSummary(forecast([2]), down, NOW)).toBe(QUIET);
+  it("does not say quiet when the alert status is unavailable", () => {
+    const text = statusSummary(forecast([2]), down, NOW);
+
+    expect(text).toBe("The forecast shows no storm in the next 6 hours, but alert status is unavailable.");
+    expect(text).not.toMatch(/^Quiet/);
   });
 
   it("an unknown alert level falls through to the forecast", () => {

@@ -11,7 +11,7 @@ export function GLevelBadge({ kp }: { kp: number }) {
 
   return (
     <span
-      className="inline-block rounded-full px-2.5 py-1 text-xs font-semibold tracking-wider"
+      className="inline-block rounded-full px-2.5 py-1 text-xs font-semibold"
       style={style}
       aria-label={g === null ? "Storm level unknown" : `Geomagnetic storm level G${g}`}
     >

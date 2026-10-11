@@ -40,6 +40,7 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     ["--muted", "--background"],
     ["--muted", "--surface"],
     ["--muted", "--surface-soft"],
+    ["--muted", "--surface-elevated"],
     ["--on-primary", "--primary-fill"],
     ["--on-primary", "--primary-fill-hover"],
     ["--primary-fill-hover", "--background"],
@@ -59,6 +60,9 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     ["--foreground", "--surface"],
     ["--muted", "--background"],
     ["--muted", "--surface"],
+    ["--muted", "--surface-soft"],
+    ["--foreground", "--surface-elevated"],
+    ["--muted", "--surface-elevated"],
     ["--g1-line", "--surface-elevated"],
   ])("dark: %s on %s", (fg, bg) => {
     const merged = { ...light, ...dark };
@@ -70,7 +74,32 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     expect(light["--primary-fill"]).not.toBe(light["--primary"]);
   });
 
+  it("uses the cool neutral palette, not the old warm one", () => {
+    expect(light["--background"]).not.toBe("#fcfaf7");
+    expect(dark["--background"]).toBe("#0f1a24");
+  });
+
   it("the OS-dark rule and the manual data-theme=dark rule stay identical", () => {
     expect(darkMedia).toEqual(dark);
+  });
+});
+
+describe("--uncertainty meets the 3:1 non-text minimum", () => {
+  it.each([
+    ["light", light],
+    ["dark", dark],
+    ["dark (media)", darkMedia],
+  ])("%s", (_name, vars) => {
+    expect(text(vars, "--uncertainty", "--surface-elevated")).toBeGreaterThanOrEqual(3);
+    expect(text(vars, "--uncertainty", "--background")).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("motion", () => {
+  it("the whisker animation is switched off for reduced motion", () => {
+    const m = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/);
+
+    expect(m).not.toBeNull();
+    expect(m?.[1]).toMatch(/\.ruler-whisker\s*\{[^}]*animation:\s*none/);
   });
 });

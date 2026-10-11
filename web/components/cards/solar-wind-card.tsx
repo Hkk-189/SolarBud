@@ -29,13 +29,13 @@ export function SolarWindCard({ result }: { result: ApiResult<SolarWindPoint> })
         {rows.map(([label, unit, value, digits]) => (
           <div key={label} className="contents">
             <dt className="text-muted">{label}</dt>
-            <dd className="text-right font-mono">{formatNum(value, digits)}</dd>
+            <dd className="text-right tabular-nums">{formatNum(value, digits)}</dd>
             <dd className="w-12 text-xs text-muted">{unit}</dd>
           </div>
         ))}
       </dl>
       <p className="mt-3 text-xs text-muted">
-        Measured <span className="font-mono">{formatUtc(d.time)}</span>
+        Measured <span className="tabular-nums">{formatUtc(d.time)}</span>
       </p>
     </Card>
   );

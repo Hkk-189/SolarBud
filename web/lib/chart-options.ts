@@ -28,7 +28,7 @@ const GRID = { left: 56, right: 16, top: 28, bottom: 28 };
 
 const xAxis = (c: ChartColors) => ({
   type: "time",
-  axisLabel: { color: c.text },
+  axisLabel: { color: c.text, hideOverlap: true },
   axisLine: { lineStyle: { color: c.grid } },
 });
 

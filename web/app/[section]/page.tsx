@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { COMING_SOON } from "@/lib/explanations";
 
@@ -6,6 +7,13 @@ export const dynamicParams = false;
 
 export function generateStaticParams() {
   return Object.keys(COMING_SOON).map((section) => ({ section }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
+  const { section } = await params;
+  const entry = Object.entries(COMING_SOON).find(([key]) => key === section)?.[1];
+
+  return { title: entry?.title };
 }
 
 export default async function ComingSoon({ params }: { params: Promise<{ section: string }> }) {

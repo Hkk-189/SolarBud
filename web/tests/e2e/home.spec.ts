@@ -2,11 +2,18 @@ import { expect, test } from "@playwright/test";
 
 test("home shows the shell, an empty state and the disclaimer", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Space weather now" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "We can't reach a current forecast, so we can't say whether a storm is coming.",
+    }),
+  ).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link")).toHaveCount(7);
   await expect(page.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("status").filter({ hasText: "We can't reach a current forecast" })).toBeVisible();
-  await expect(page.getByText("No data", { exact: true })).toBeVisible();
+  await expect(page.getByRole("img", { name: /In 1 hour: no forecast/ })).toBeVisible();
+  await expect(page.getByText("no forecast", { exact: true })).toHaveCount(3);
   await expect(page.getByText("Alert status unavailable")).toBeVisible();
   await expect(page.getByText("Solar wind history unavailable.")).toBeVisible();
   await expect(page.getByRole("link", { name: "NOAA SWPC" })).toHaveAttribute(
@@ -67,11 +74,65 @@ for (const [href, title] of [
     const res = await page.goto(href);
 
     expect(res?.status()).toBe(200);
+    await expect(page).toHaveTitle(`${title} - SolarBud`);
     await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: title })).toHaveAttribute(
       "aria-current",
       "page",
     );
+  });
+}
+
+test("the home page keeps the plain tab title", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveTitle("SolarBud");
+});
+
+// The charts only show their explainers once they have data. The API is down in this suite, so
+// feed the three same-origin routes the browser polls.
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`phone width with the chart explanations open has no horizontal scroll (${colorScheme})`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, colorScheme });
+    const page = await ctx.newPage();
+    const now = Date.now();
+    const iso = (offsetMin: number) => new Date(now + offsetMin * 60_000).toISOString();
+
+    await page.route("**/api/kp-forecast", (r) =>
+      r.fulfill({
+        json: {
+          issued_at: iso(-2),
+          model_version: "e2e",
+          data_stale: false,
+          horizons: [1, 3, 6].map((h) => ({ horizon_h: h, p10: 2, p50: 3, p90: 4.5 })),
+        },
+      }),
+    );
+    await page.route("**/api/kp-observed", (r) => r.fulfill({ json: [{ time: iso(-120), kp: 3 }] }));
+    await page.route("**/api/solar-wind", (r) =>
+      r.fulfill({
+        json: Array.from({ length: 30 }, (_, i) => ({
+          time: iso(-i),
+          speed_kms: 400,
+          density_cm3: 5,
+          bz_gsm_nt: -2,
+          bt_nt: 5,
+        })),
+      }),
+    );
+    await page.goto("http://localhost:3000/");
+    await expect(page.getByText("Kp, last 24 h and next 6 h")).toBeVisible();
+    await expect(page.getByText("Solar wind, last 24 h")).toBeVisible();
+
+    const summaries = page.getByText("What does this mean?");
+    const count = await summaries.count();
+
+    expect(count).toBeGreaterThanOrEqual(3); // hero, Kp chart, solar wind charts
+
+    for (let i = 0; i < count; i++) await summaries.nth(i).click();
+
+    await expect(page.locator("details[open]")).toHaveCount(count);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    await ctx.close();
   });
 }
 

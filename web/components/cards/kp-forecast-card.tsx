@@ -29,7 +29,7 @@ export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
       )}
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-wider text-muted">
+          <tr className="text-left text-xs text-muted">
             <th className="py-1 pr-2 font-semibold">Ahead</th>
             <th title="p10" className="py-1 pr-2 font-semibold">
               Low{" "}<span className="sr-only">(p10)</span>
@@ -49,9 +49,9 @@ export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
               <th scope="row" className="py-2 pr-2 text-left font-medium">
                 +{h.horizon_h} h
               </th>
-              <td className="py-2 pr-2 font-mono">{formatNum(h.p10, 1)}</td>
-              <td className="py-2 pr-2 font-mono">{formatNum(h.p50, 1)}</td>
-              <td className="py-2 pr-2 font-mono">{formatNum(h.p90, 1)}</td>
+              <td className="py-2 pr-2 tabular-nums">{formatNum(h.p10, 1)}</td>
+              <td className="py-2 pr-2 tabular-nums">{formatNum(h.p50, 1)}</td>
+              <td className="py-2 pr-2 tabular-nums">{formatNum(h.p90, 1)}</td>
               <td className="py-2">
                 <GLevelBadge kp={h.p50} />
               </td>
@@ -59,10 +59,10 @@ export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
           ))}
         </tbody>
       </table>
-      <p className="mt-3 text-xs text-muted">
-        Issued <span className="font-mono">{formatUtc(data.issued_at)}</span> · model{" "}
-        <span className="font-mono">{data.model_version}</span>
-      </p>
+      <div className="mt-3 text-xs text-muted">
+        <p className="tabular-nums">Issued {formatUtc(data.issued_at)}</p>
+        <p>Model {data.model_version}</p>
+      </div>
     </Card>
   );
 }
