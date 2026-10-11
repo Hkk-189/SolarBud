@@ -37,5 +37,8 @@ export function statusSummary(
     return `Activity is raised: the forecast's likely value reaches G${peak} within the next 6 hours.`;
   }
 
+  // Without the alert state we cannot rule out a warning, so do not claim it is quiet.
+  if (!alert.ok) return "The forecast shows no storm in the next 6 hours, but alert status is unavailable.";
+
   return "Quiet: no geomagnetic storm expected in the next 6 hours.";
 }

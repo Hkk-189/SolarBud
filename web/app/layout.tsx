@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { siteTitle } from "@/lib/site-title";
 import { Footer } from "@/components/shell/footer";
 import { Header } from "@/components/shell/header";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -9,7 +10,7 @@ import "./globals.css";
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "SolarBud",
+  title: siteTitle,
   description: "Geomagnetic storm forecasts and alerts. Not an official forecast.",
 };
 

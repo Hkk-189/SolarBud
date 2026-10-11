@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
-import Page, { dynamicParams, generateStaticParams } from "@/app/[section]/page";
+import Page, { dynamicParams, generateMetadata, generateStaticParams } from "@/app/[section]/page";
 import { NAV } from "@/components/shell/sidebar";
 import { COMING_SOON } from "@/lib/explanations";
 
@@ -30,4 +30,9 @@ it("covers every non-home sidebar link with a matching title", () => {
     expect(entry, href).toBeDefined();
     expect(entry?.[1].title).toBe(label);
   }
+});
+
+it("gives each section its own tab title", async () => {
+  expect(await generateMetadata({ params: Promise.resolve({ section: "gnss" }) })).toEqual({ title: "GNSS" });
+  expect(await generateMetadata({ params: Promise.resolve({ section: "cme" }) })).toEqual({ title: "CME tracker" });
 });

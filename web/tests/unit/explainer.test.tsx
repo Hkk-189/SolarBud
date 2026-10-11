@@ -18,3 +18,13 @@ it("shows the summary and a closed disclosure holding every detail", () => {
 
   for (const d of explain.details) expect(within(details).getByText(d)).toBeTruthy();
 });
+
+it("shows an open/closed chevron that screen readers skip", () => {
+  const { container } = render(<Explainer explain={explain} />);
+  const summary = container.querySelector("summary");
+  const chevron = summary?.querySelector("[aria-hidden='true']");
+
+  expect(chevron).not.toBeNull();
+  expect(summary?.textContent).toContain("What does this mean?");
+  expect(within(container).getByText("What does this mean?").tagName).toBe("SUMMARY");
+});

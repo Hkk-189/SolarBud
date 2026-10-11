@@ -1,4 +1,6 @@
 import type { KpForecast, KpPoint } from "@/lib/api/client";
+import { forecastIsOld } from "@/lib/forecast-age";
+import { formatUtc } from "@/lib/format";
 import { gLevel, gStart } from "@/lib/g-level";
 
 export interface RulerLane {
@@ -15,9 +17,9 @@ const EDGES = [0, 1, 2, 3, 4, 5].map((n) => (n === 0 ? 0 : gStart(n)));
 const KP_MAX = 9;
 
 const HORIZONS = [
-  { h: 1, label: "In 1 h", spoken: "In 1 hour" },
-  { h: 3, label: "In 3 h", spoken: "In 3 hours" },
-  { h: 6, label: "In 6 h", spoken: "In 6 hours" },
+  { h: 1, label: "In 1 h", spoken: "In 1 hour", afterLabel: "+1 h", afterSpoken: "1 hour after the forecast" },
+  { h: 3, label: "In 3 h", spoken: "In 3 hours", afterLabel: "+3 h", afterSpoken: "3 hours after the forecast" },
+  { h: 6, label: "In 6 h", spoken: "In 6 hours", afterLabel: "+6 h", afterSpoken: "6 hours after the forecast" },
 ];
 
 const clamp = (kp: number) => Math.min(KP_MAX, Math.max(0, kp));
@@ -45,8 +47,12 @@ function observedLane(observed: KpPoint[] | null, nowMs: number): RulerLane {
 export function kpRuler(forecast: KpForecast | null, observed: KpPoint[] | null, nowMs: number) {
   const bands = EDGES.map((from, i) => ({ g: i, from, to: EDGES[i + 1] ?? KP_MAX }));
   const lanes: RulerLane[] = [observedLane(observed, nowMs)];
+  // Lanes are relative to the issue time, so an old forecast says so instead of promising "In 1 h".
+  const old = forecast ? forecastIsOld(forecast.issued_at, nowMs) : false;
 
-  for (const { h, label, spoken } of HORIZONS) {
+  for (const { h, label: fresh, spoken: freshSpoken, afterLabel, afterSpoken } of HORIZONS) {
+    const label = old ? afterLabel : fresh;
+    const spoken = old ? afterSpoken : freshSpoken;
     const hz = forecast?.horizons.find((x) => x.horizon_h === h);
 
     if (!hz || ![hz.p10, hz.p50, hz.p90].every(Number.isFinite)) {
@@ -68,5 +74,8 @@ export function kpRuler(forecast: KpForecast | null, observed: KpPoint[] | null,
     });
   }
 
-  return { bands, lanes };
+  const issuedNote =
+    forecast && old ? `Forecast issued ${formatUtc(forecast.issued_at)}, so these lanes count from then.` : null;
+
+  return { bands, lanes, issuedNote };
 }

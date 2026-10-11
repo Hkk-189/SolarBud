@@ -14,7 +14,7 @@ const forecast: KpForecast = {
   ],
 };
 
-const NOW = Date.parse("2026-10-11T01:00:00Z");
+const NOW = Date.parse("2026-10-11T00:10:00Z"); // 10 min after the forecast was issued
 
 describe("StormRuler", () => {
   it("draws the lane baseline with bg-outline", () => {
@@ -55,5 +55,41 @@ describe("StormRuler", () => {
 
     expect(within(container).getAllByText("no forecast")).toHaveLength(3);
     expect(within(container).getByText("G0")).toBeTruthy();
+  });
+
+  it("places a whisker from p10 to p90 and grows it from the p50 dot", () => {
+    const { container } = render(<StormRuler nowMs={NOW} forecast={forecast} observed={null} />);
+    const w = container.querySelectorAll<HTMLElement>(".ruler-whisker")[1]; // the +3 h lane: 2.5 / 4.2 / 5.6
+
+    expect(parseFloat(w.style.left)).toBeCloseTo((2.5 / 9) * 100, 6);
+    expect(parseFloat(w.style.width)).toBeCloseTo((3.1 / 9) * 100, 6);
+    expect(parseFloat(w.style.transformOrigin)).toBeCloseTo(((4.2 - 2.5) / 3.1) * 100, 6);
+  });
+
+  it("clamps a whisker that runs past the scale and centres a zero-width one", () => {
+    const wide: KpForecast = {
+      ...forecast,
+      horizons: [
+        { horizon_h: 1, p10: -0.2, p50: 4, p90: 9.5 },
+        { horizon_h: 3, p10: 4, p50: 4, p90: 4 },
+        { horizon_h: 6, p10: 2, p50: 4.5, p90: 6.5 },
+      ],
+    };
+
+    const { container } = render(<StormRuler nowMs={NOW} forecast={wide} observed={null} />);
+    const [a, b] = container.querySelectorAll<HTMLElement>(".ruler-whisker");
+
+    expect(a.style.left).toBe("0%");
+    expect(a.style.width).toBe("100%");
+    expect(b.style.transformOrigin).toBe("50% 50%");
+  });
+
+  it("shows when an old forecast was issued, visibly and in the image name", () => {
+    const later = Date.parse("2026-10-11T00:16:00Z");
+    const { container } = render(<StormRuler nowMs={later} forecast={forecast} observed={null} />);
+    const note = "Forecast issued 2026-10-11 00:00 UTC, so these lanes count from then.";
+
+    expect(within(container).getByText(note)).toBeTruthy();
+    expect(within(container).getByRole("img").getAttribute("aria-label")).toContain(note);
   });
 });

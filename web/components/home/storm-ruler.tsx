@@ -70,8 +70,8 @@ export function StormRuler({
   observed: KpPoint[] | null;
   nowMs: number;
 }) {
-  const { bands, lanes } = kpRuler(forecast, observed, nowMs);
-  const label = `Kp scale from 0 to 9 with NOAA storm bands G0 to G5. ${lanes.map((l) => l.text).join(". ")}.`;
+  const { bands, lanes, issuedNote } = kpRuler(forecast, observed, nowMs);
+  const label = `Kp scale from 0 to 9 with NOAA storm bands G0 to G5. ${lanes.map((l) => l.text).join(". ")}.${issuedNote ? ` ${issuedNote}` : ""}`;
 
   return (
     <div role="img" aria-label={label} className="w-full">
@@ -116,6 +116,7 @@ export function StormRuler({
             <Lane key={l.label} lane={l} />
           ))}
         </div>
+        {issuedNote && <p className="mt-2 text-sm text-muted">{issuedNote}</p>}
       </div>
     </div>
   );

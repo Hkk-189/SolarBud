@@ -40,6 +40,7 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     ["--muted", "--background"],
     ["--muted", "--surface"],
     ["--muted", "--surface-soft"],
+    ["--muted", "--surface-elevated"],
     ["--on-primary", "--primary-fill"],
     ["--on-primary", "--primary-fill-hover"],
     ["--primary-fill-hover", "--background"],
@@ -59,6 +60,7 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     ["--foreground", "--surface"],
     ["--muted", "--background"],
     ["--muted", "--surface"],
+    ["--muted", "--surface-soft"],
     ["--foreground", "--surface-elevated"],
     ["--muted", "--surface-elevated"],
     ["--g1-line", "--surface-elevated"],
@@ -90,5 +92,14 @@ describe("--uncertainty meets the 3:1 non-text minimum", () => {
   ])("%s", (_name, vars) => {
     expect(text(vars, "--uncertainty", "--surface-elevated")).toBeGreaterThanOrEqual(3);
     expect(text(vars, "--uncertainty", "--background")).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("motion", () => {
+  it("the whisker animation is switched off for reduced motion", () => {
+    const m = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/);
+
+    expect(m).not.toBeNull();
+    expect(m?.[1]).toMatch(/\.ruler-whisker\s*\{[^}]*animation:\s*none/);
   });
 });

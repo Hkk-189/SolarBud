@@ -18,7 +18,7 @@ const forecast = fc([
 
 const T0 = Date.parse("2026-10-11T00:00:00Z");
 
-const NOW = T0 + 3 * 3600 * 1000;
+const NOW = T0 + 10 * 60 * 1000; // a fresh forecast; the observation at T0 is 10 min old
 
 const kpRuler = (f: KpForecast | null, o: KpPoint[] | null, now = NOW) => ruler(f, o, now);
 
@@ -130,5 +130,28 @@ describe("kpRuler with non-finite values", () => {
 
   it("treats a NaN observed Kp as no observation", () => {
     expect(kpRuler(null, [pt(Number.NaN)]).lanes[0].text).toBe("Now: no recent observation");
+  });
+});
+
+describe("an old forecast", () => {
+  const LATE = T0 + 16 * 60 * 1000; // 16 min after issue
+
+  it("keeps the relative labels and has no note while it is fresh", () => {
+    const r = kpRuler(forecast, null, T0 + 15 * 60 * 1000);
+
+    expect(r.lanes[1].label).toBe("In 1 h");
+    expect(r.issuedNote).toBeNull();
+  });
+
+  it("counts lanes from the issue time and says when it was issued", () => {
+    const r = kpRuler(forecast, null, LATE);
+
+    expect(r.lanes.slice(1).map((l) => l.label)).toEqual(["+1 h", "+3 h", "+6 h"]);
+    expect(r.lanes[2].text).toBe("3 hours after the forecast: likely Kp 4.2 (G0), range 2.5 to 5.6 (G0 to G1)");
+    expect(r.issuedNote).toBe("Forecast issued 2026-10-11 00:00 UTC, so these lanes count from then.");
+  });
+
+  it("has no note when there is no forecast at all", () => {
+    expect(kpRuler(null, null, LATE).issuedNote).toBeNull();
   });
 });
