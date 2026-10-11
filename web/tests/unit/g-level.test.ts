@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { G1_KP, gLevel } from "@/lib/g-level";
+import { G1_KP, gLevel, gStart } from "@/lib/g-level";
 
 // Mirrors backend/app/core/constants.py: G_n starts at Kp >= (n + 4) - 1/3, with a 1e-3 tolerance.
 describe("gLevel", () => {
@@ -24,5 +24,11 @@ describe("gLevel", () => {
 
   it("returns null for unknown Kp", () => {
     expect(gLevel(Number.NaN)).toBeNull();
+  });
+});
+
+describe("gStart", () => {
+  it("is the G1 threshold for n = 1", () => {
+    expect(gStart(1)).toBe(G1_KP);
   });
 });

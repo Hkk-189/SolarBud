@@ -111,3 +111,20 @@ body {
   outline: 2px solid var(--primary-focus);
   outline-offset: 2px;
 }
+
+/* The ruler's one motion moment: whiskers grow out from their p50 dot once on first paint. */
+@keyframes ruler-extend {
+  from {
+    transform: translateY(-50%) scaleX(0);
+  }
+}
+
+.ruler-whisker {
+  animation: ruler-extend 300ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ruler-whisker {
+    animation: none;
+  }
+}
