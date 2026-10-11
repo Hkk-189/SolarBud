@@ -1,5 +1,6 @@
 import { Card, Empty } from "./card";
 import type { ApiResult, SolarWindPoint } from "@/lib/api/client";
+import { EXPLAIN } from "@/lib/explanations";
 import { formatNum, formatUtc } from "@/lib/format";
 
 export function SolarWindCard({ result }: { result: ApiResult<SolarWindPoint> }) {
@@ -7,7 +8,7 @@ export function SolarWindCard({ result }: { result: ApiResult<SolarWindPoint> })
 
   if (!result.ok) {
     return (
-      <Card title={title}>
+      <Card title={title} explain={EXPLAIN.solarWindNow}>
         <Empty>Solar wind data unavailable. No recent reading from the API.</Empty>
       </Card>
     );
@@ -23,7 +24,7 @@ export function SolarWindCard({ result }: { result: ApiResult<SolarWindPoint> })
   ];
 
   return (
-    <Card title={title}>
+    <Card title={title} explain={EXPLAIN.solarWindNow}>
       <dl className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-2 gap-y-2 text-sm">
         {rows.map(([label, unit, value, digits]) => (
           <div key={label} className="contents">

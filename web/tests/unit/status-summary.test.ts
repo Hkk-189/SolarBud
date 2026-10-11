@@ -1,0 +1,101 @@
+import { describe, expect, it } from "vitest";
+import type { AlertStatus, ApiResult, KpForecast } from "@/lib/api/client";
+import { statusSummary } from "@/lib/status-summary";
+
+const ISSUED = "2026-10-11T09:00:00Z";
+
+const NOW = Date.parse(ISSUED) + 60_000;
+
+const OUT_OF_DATE = "The latest forecast is out of date, so treat the numbers below with caution.";
+
+const NO_FORECAST = "We can't reach a current forecast, so we can't say whether a storm is coming.";
+
+const ACTIVE = "A geomagnetic storm (G1 or stronger) is happening now.";
+
+const WARNING = "A storm warning is in effect: a G1 or stronger storm may arrive within the next 6 hours.";
+
+const DATA_STALE = "The latest forecast used out-of-date solar wind data, so treat the numbers below with caution.";
+
+const ACTIVE_STALE =
+  "A geomagnetic storm (G1 or stronger) is happening now. Solar wind data is out of date, so the forecast below is less reliable.";
+
+const QUIET = "Quiet: no geomagnetic storm expected in the next 6 hours.";
+
+const forecast = (p50s: number[], over: Partial<KpForecast> = {}): ApiResult<KpForecast> => ({
+  ok: true,
+  data: {
+    data_stale: false,
+    issued_at: ISSUED,
+    model_version: "t",
+    horizons: p50s.map((p50, i) => ({ horizon_h: i + 1, p10: p50 - 1, p50, p90: p50 + 1 })),
+    ...over,
+  },
+});
+
+const alert = (level: string): ApiResult<AlertStatus> => ({ ok: true, data: { level } });
+
+const down = { ok: false } as const;
+
+describe("statusSummary", () => {
+  it("never says quiet when the forecast is missing", () => {
+    expect(statusSummary(down, alert("none"), NOW)).toBe(NO_FORECAST);
+  });
+
+  it("says out of date for an old forecast", () => {
+    expect(statusSummary(forecast([2]), alert("none"), NOW + 20 * 60_000)).toBe(OUT_OF_DATE);
+  });
+
+  it("says the data is out of date for data_stale, with and without a warning", () => {
+    expect(statusSummary(forecast([2], { data_stale: true }), alert("none"), NOW)).toBe(DATA_STALE);
+    expect(statusSummary(forecast([2], { data_stale: true }), alert("warning"), NOW)).toBe(DATA_STALE);
+  });
+
+  it("an active storm with data_stale says the forecast is less reliable", () => {
+    expect(statusSummary(forecast([2], { data_stale: true }), alert("active"), NOW)).toBe(ACTIVE_STALE);
+  });
+
+  it("an empty forecast never reads as quiet", () => {
+    const empty: ApiResult<KpForecast> = {
+      ok: true,
+      data: { data_stale: false, issued_at: ISSUED, model_version: "t", horizons: [] },
+    };
+
+    expect(statusSummary(empty, alert("none"), NOW)).toBe(NO_FORECAST);
+  });
+
+  it("out of date wins over an active alert", () => {
+    expect(statusSummary(forecast([2]), alert("active"), NOW + 20 * 60_000)).toBe(OUT_OF_DATE);
+  });
+
+  it("reports an active storm", () => {
+    expect(statusSummary(forecast([2]), alert("active"), NOW)).toBe(ACTIVE);
+  });
+
+  it("reports a warning", () => {
+    expect(statusSummary(forecast([2]), alert("warning"), NOW)).toBe(WARNING);
+  });
+
+  it("reports raised activity from the highest p50", () => {
+    expect(statusSummary(forecast([3, 5.2, 4]), alert("none"), NOW)).toBe(
+      "Activity is raised: the forecast's likely value reaches G1 within the next 6 hours.",
+    );
+  });
+
+  it("is quiet for a quiet forecast", () => {
+    expect(statusSummary(forecast([2, 3]), alert("none"), NOW)).toBe(QUIET);
+  });
+
+  it("is quiet when the alert is down and the forecast is quiet", () => {
+    expect(statusSummary(forecast([2]), down, NOW)).toBe(QUIET);
+  });
+
+  it("an unknown alert level falls through to the forecast", () => {
+    expect(statusSummary(forecast([2]), alert("watch"), NOW)).toBe(QUIET);
+    expect(statusSummary(forecast([6]), alert("watch"), NOW)).toContain("reaches G2");
+  });
+
+  it("boundary: 4.66 is quiet, 4.667 reaches G1", () => {
+    expect(statusSummary(forecast([4.66]), alert("none"), NOW)).toBe(QUIET);
+    expect(statusSummary(forecast([4.667]), alert("none"), NOW)).toContain("reaches G1");
+  });
+});

@@ -2,6 +2,7 @@ import { Card } from "./card";
 import { GLevelBadge } from "./g-level-badge";
 import { AlertLevel } from "./alert-level";
 import type { AlertStatus, ApiResult, KpForecast } from "@/lib/api/client";
+import { EXPLAIN } from "@/lib/explanations";
 import { forecastIsOld } from "@/lib/forecast-age";
 
 export function StormLevelCard({
@@ -25,7 +26,7 @@ export function StormLevelCard({
         : null;
 
   return (
-    <Card title="Storm level">
+    <Card title="Storm level" explain={EXPLAIN.stormLevel}>
       <GLevelBadge kp={h1 ? h1.p50 : Number.NaN} />
       <p className="mt-3 text-sm text-muted">
         {h1 ? "Forecast, +1 h (median Kp)" : "No forecast available"}

@@ -7,6 +7,7 @@ import { EChart } from "./echart";
 import { TimeZoneToggle, useTimeZone } from "./time-zone";
 import { REFRESH_MS, useChartColors } from "./use-chart-colors";
 import type { SolarWindPoint } from "@/lib/api/client";
+import { EXPLAIN } from "@/lib/explanations";
 import { type WindField, lineOption } from "@/lib/chart-options";
 
 const SERIES: { field: WindField; label: string; unit: string }[] = [
@@ -62,7 +63,7 @@ export function SolarWindCharts({ initial, Chart = EChart }: Props) {
   }
 
   return (
-    <Card title={title}>
+    <Card title={title} explain={EXPLAIN.solarWindCharts}>
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs text-muted">
           {isError ? "Refresh failed, showing the last data." : "Updates every 5 min."}

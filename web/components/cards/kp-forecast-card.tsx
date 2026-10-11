@@ -1,6 +1,7 @@
 import { Card, Empty } from "./card";
 import { GLevelBadge } from "./g-level-badge";
 import type { ApiResult, KpForecast } from "@/lib/api/client";
+import { EXPLAIN } from "@/lib/explanations";
 import { formatNum, formatUtc } from "@/lib/format";
 
 export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
@@ -8,7 +9,7 @@ export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
 
   if (!result.ok) {
     return (
-      <Card title={title}>
+      <Card title={title} explain={EXPLAIN.kpForecast}>
         <Empty>Forecast unavailable. The API is not reachable or has not issued a forecast yet.</Empty>
       </Card>
     );
@@ -17,7 +18,7 @@ export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
   const { data } = result;
 
   return (
-    <Card title={title}>
+    <Card title={title} explain={EXPLAIN.kpForecast}>
       {data.data_stale && (
         <p
           role="status"
@@ -30,9 +31,15 @@ export function KpForecastCard({ result }: { result: ApiResult<KpForecast> }) {
         <thead>
           <tr className="text-left text-xs uppercase tracking-wider text-muted">
             <th className="py-1 pr-2 font-semibold">Ahead</th>
-            <th className="py-1 pr-2 font-semibold">p10</th>
-            <th className="py-1 pr-2 font-semibold">p50</th>
-            <th className="py-1 pr-2 font-semibold">p90</th>
+            <th title="p10" className="py-1 pr-2 font-semibold">
+              Low{" "}<span className="sr-only">(p10)</span>
+            </th>
+            <th title="p50" className="py-1 pr-2 font-semibold">
+              Likely{" "}<span className="sr-only">(p50)</span>
+            </th>
+            <th title="p90" className="py-1 pr-2 font-semibold">
+              High{" "}<span className="sr-only">(p90)</span>
+            </th>
             <th className="py-1 font-semibold">Level</th>
           </tr>
         </thead>

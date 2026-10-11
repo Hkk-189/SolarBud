@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { KpBandChart } from "@/components/charts/kp-band-chart";
+import { EXPLAIN } from "@/lib/explanations";
 import type { KpForecast } from "@/lib/api/client";
 
 const media = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
@@ -29,7 +30,12 @@ it("draws the band from the server-provided forecast and names the G1 line", () 
   render(wrap(<KpBandChart initial={base} initialObserved={observed} Chart={FakeChart} />));
   expect(screen.getAllByTestId("chart")).toHaveLength(1);
   expect(screen.queryByText(/stale/i)).toBeNull();
-  expect(screen.getByText(/G1/)).toBeTruthy();
+  expect(screen.getByText(/dashed line is G1/i)).toBeTruthy();
+});
+
+it("explains the chart in plain language", () => {
+  const { container } = render(wrap(<KpBandChart initial={base} initialObserved={observed} Chart={FakeChart} />));
+  expect(within(container).getByText(EXPLAIN.kpChart.summary)).toBeTruthy();
 });
 
 it("says the forecast is over 15 minutes old once it is", () => {
@@ -41,6 +47,7 @@ it("says nothing about age for a fresh forecast", () => {
   const fresh = { ...base, issued_at: new Date(Date.now() - 2 * 60 * 1000).toISOString() };
   const { container } = render(wrap(<KpBandChart initial={fresh} initialObserved={observed} Chart={FakeChart} />));
   expect(within(container).queryByText(/over 15 min old/i)).toBeNull();
+  expect(container.querySelectorAll("p.text-xs")).toHaveLength(0);
 });
 
 it("warns when the forecast was made from stale L1 data", () => {

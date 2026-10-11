@@ -9,6 +9,7 @@ import { REFRESH_MS, useChartColors } from "./use-chart-colors";
 import { useNow } from "./use-now";
 import type { KpForecast, KpPoint } from "@/lib/api/client";
 import { bandOption } from "@/lib/chart-options";
+import { EXPLAIN } from "@/lib/explanations";
 import { forecastIsOld } from "@/lib/forecast-age";
 
 async function fetchForecast(): Promise<KpForecast> {
@@ -76,17 +77,17 @@ export function KpBandChart({ initial, initialObserved, Chart = EChart }: Props)
   }
 
   return (
-    <Card title={title}>
+    <Card title={title} explain={EXPLAIN.kpChart}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-xs text-muted">
-          {old
-            ? "Forecast is over 15 min old, the worker may be down. "
-            : null}
-          {data.data_stale
-            ? "Based on stale L1 data. Treat with caution."
-            : "Observed Kp, then the forecast median with its p10 to p90 range. Dashed line: G1 storm threshold (Kp 5-)."}
-        </p>
-        <TimeZoneToggle />
+        {old || data.data_stale ? (
+          <p className="text-xs text-muted">
+            {old ? "Forecast is over 15 min old, the worker may be down. " : null}
+            {data.data_stale ? "Based on stale L1 data. Treat with caution." : null}
+          </p>
+        ) : null}
+        <div className="ml-auto">
+          <TimeZoneToggle />
+        </div>
       </div>
       <Chart option={option} label="Observed Kp for the last 24 hours and the forecast for the next 6 hours, median with p10 to p90 band and the G1 threshold" />
     </Card>
