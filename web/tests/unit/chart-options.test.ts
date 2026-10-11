@@ -11,6 +11,11 @@ const pts: SolarWindPoint[] = [
 ];
 
 describe("lineOption", () => {
+  it("hides overlapping x labels", () => {
+    const o = lineOption({ points: pts, field: "speed_kms", unit: "km/s", utc: true, colors: COLORS });
+    expect(o.xAxis.axisLabel.hideOverlap).toBe(true);
+  });
+
   it("plots [ms, value] pairs and keeps gaps as null", () => {
     const o = lineOption({ points: pts, field: "speed_kms", unit: "km/s", utc: true, colors: COLORS });
     expect(o.series[0]!.data).toEqual([

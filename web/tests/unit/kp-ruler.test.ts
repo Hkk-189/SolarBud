@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KpForecast, KpPoint } from "@/lib/api/client";
 import { gStart } from "@/lib/g-level";
-import { kpRuler } from "@/lib/kp-ruler";
+import { kpRuler as ruler, MAX_OBSERVATION_AGE_MS } from "@/lib/kp-ruler";
 
 const fc = (hs: [number, number, number, number][]): KpForecast => ({
   data_stale: false,
@@ -16,7 +16,25 @@ const forecast = fc([
   [6, 2, 4.5, 6.5],
 ]);
 
+const T0 = Date.parse("2026-10-11T00:00:00Z");
+
+const NOW = T0 + 3 * 3600 * 1000;
+
+const kpRuler = (f: KpForecast | null, o: KpPoint[] | null, now = NOW) => ruler(f, o, now);
+
 const pt = (kp: number | null): KpPoint => ({ time: "2026-10-11T00:00:00Z", kp });
+
+describe("Now age guard", () => {
+  it("shows a bin exactly 6 h old", () => {
+    expect(kpRuler(forecast, [pt(4)], T0 + MAX_OBSERVATION_AGE_MS).lanes[0].text).toBe("Now: Kp 4.0 (G0)");
+  });
+  it("drops a bin 6 h and 1 ms old", () => {
+    const now = kpRuler(forecast, [pt(4)], T0 + MAX_OBSERVATION_AGE_MS + 1).lanes[0];
+
+    expect(now.p50).toBeNull();
+    expect(now.text).toBe("Now: no recent observation");
+  });
+});
 
 describe("kpRuler", () => {
   it("builds six bands with edges from gStart", () => {

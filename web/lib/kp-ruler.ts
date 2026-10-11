@@ -26,11 +26,14 @@ const one = (kp: number) => kp.toFixed(1);
 
 const g = (kp: number) => `G${gLevel(kp) ?? 0}`;
 
-function observedLane(observed: KpPoint[] | null): RulerLane {
+/** Two Kp bins: an older reading is not "Now". */
+export const MAX_OBSERVATION_AGE_MS = 6 * 3600 * 1000;
+
+function observedLane(observed: KpPoint[] | null, nowMs: number): RulerLane {
   const last = observed?.findLast((p) => p.kp != null);
   const kp = last?.kp;
 
-  if (kp == null || !Number.isFinite(kp)) {
+  if (!last || kp == null || !Number.isFinite(kp) || nowMs - Date.parse(last.time) > MAX_OBSERVATION_AGE_MS) {
     return { label: "Now", kind: "observed", p50: null, text: "Now: no recent observation" };
   }
 
@@ -39,9 +42,9 @@ function observedLane(observed: KpPoint[] | null): RulerLane {
   return { label: "Now", kind: "observed", p50, text: `Now: Kp ${one(p50)} (${g(p50)})` };
 }
 
-export function kpRuler(forecast: KpForecast | null, observed: KpPoint[] | null) {
+export function kpRuler(forecast: KpForecast | null, observed: KpPoint[] | null, nowMs: number) {
   const bands = EDGES.map((from, i) => ({ g: i, from, to: EDGES[i + 1] ?? KP_MAX }));
-  const lanes: RulerLane[] = [observedLane(observed)];
+  const lanes: RulerLane[] = [observedLane(observed, nowMs)];
 
   for (const { h, label, spoken } of HORIZONS) {
     const hz = forecast?.horizons.find((x) => x.horizon_h === h);

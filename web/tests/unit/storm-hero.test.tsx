@@ -35,6 +35,16 @@ describe("StormHero", () => {
     expect(h1.textContent).toBe(statusSummary({ ok: true, data: forecast }, alert, NOW));
     expect(screen.getByRole("status").contains(h1)).toBe(true);
   });
+  it("shows a fresh observation as Now", () => {
+    const observed = { ok: true, data: [{ time: "2026-10-04T09:00:00Z", kp: 3.33 }] };
+    render(<StormHero nowMs={NOW} forecast={{ ok: true, data: forecast }} alert={quiet} observed={observed} />);
+    expect(screen.getByRole("img").getAttribute("aria-label")).toContain("Now: Kp 3.3");
+  });
+  it("drops an old observation from Now", () => {
+    const observed = { ok: true, data: [{ time: "2026-10-04T03:00:00Z", kp: 3.33 }] };
+    render(<StormHero nowMs={NOW} forecast={{ ok: true, data: forecast }} alert={quiet} observed={observed} />);
+    expect(screen.getByRole("img").getAttribute("aria-label")).toContain("Now: no recent observation");
+  });
   it("shows the +1 h forecast on the ruler", () => {
     render(<StormHero nowMs={NOW} forecast={{ ok: true, data: forecast }} alert={quiet} observed={down} />);
     expect(screen.getByRole("img").getAttribute("aria-label")).toContain("In 1 hour: likely Kp 6.0 (G2)");

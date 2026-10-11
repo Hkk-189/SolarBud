@@ -14,10 +14,18 @@ const forecast: KpForecast = {
   ],
 };
 
+const NOW = Date.parse("2026-10-11T01:00:00Z");
+
 describe("StormRuler", () => {
+  it("draws the lane baseline with bg-outline", () => {
+    const { container } = render(<StormRuler nowMs={NOW} forecast={forecast} observed={null} />);
+
+    expect(container.querySelector(".bg-outline")).not.toBeNull();
+  });
+
   it("is one image whose name carries the lane texts", () => {
     const { container } = render(
-      <StormRuler forecast={forecast} observed={[{ time: "2026-10-11T00:00:00Z", kp: 4 }]} />,
+      <StormRuler nowMs={NOW} forecast={forecast} observed={[{ time: "2026-10-11T00:00:00Z", kp: 4 }]} />,
     );
 
     const img = within(container).getByRole("img");
@@ -29,7 +37,7 @@ describe("StormRuler", () => {
   });
 
   it("writes each band's G label", () => {
-    const { container } = render(<StormRuler forecast={forecast} observed={null} />);
+    const { container } = render(<StormRuler nowMs={NOW} forecast={forecast} observed={null} />);
 
     for (const g of ["G0", "G1", "G2", "G3", "G4", "G5"]) {
       expect(within(container).getByText(g)).toBeTruthy();
@@ -37,13 +45,13 @@ describe("StormRuler", () => {
   });
 
   it("uses no middle dots", () => {
-    const { container } = render(<StormRuler forecast={forecast} observed={null} />);
+    const { container } = render(<StormRuler nowMs={NOW} forecast={forecast} observed={null} />);
 
     expect(container.textContent).not.toContain("·");
   });
 
   it("renders three no-forecast lanes when the forecast is null", () => {
-    const { container } = render(<StormRuler forecast={null} observed={null} />);
+    const { container } = render(<StormRuler nowMs={NOW} forecast={null} observed={null} />);
 
     expect(within(container).getAllByText("no forecast")).toHaveLength(3);
     expect(within(container).getByText("G0")).toBeTruthy();

@@ -13,7 +13,7 @@ const ROW = "grid gap-x-4 md:grid-cols-[4.5rem_1fr] md:items-center";
 function Dot({ kp }: { kp: number }) {
   return (
     <span
-      className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground"
+      className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground"
       style={{ left: pct(kp) }}
     />
   );
@@ -29,10 +29,10 @@ function Whisker({ lane }: { lane: RulerLane }) {
 
   return (
     <span
-      className="ruler-whisker absolute top-1/2 h-3 -translate-y-1/2 border-x-2 border-uncertainty"
+      className="ruler-whisker absolute top-1/2 h-3.5 -translate-y-1/2 border-x-[3px] border-uncertainty"
       style={{ left: pct(p10), width: pct(span), transformOrigin: `${origin}% 50%` }}
     >
-      <span className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-uncertainty" />
+      <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 bg-uncertainty" />
     </span>
   );
 }
@@ -45,7 +45,7 @@ function Lane({ lane }: { lane: RulerLane }) {
         {lane.p50 !== null && <span className="tabular-nums text-muted">{lane.p50.toFixed(1)}</span>}
       </div>
       <div className={`${TRACK} h-6`}>
-        <span className="absolute inset-x-0 top-1/2 h-px bg-border" />
+        <span className="absolute inset-x-0 top-1/2 h-px bg-outline" />
         {lane.p50 === null ? (
           <span className="absolute inset-y-0 left-0 flex items-center text-sm text-muted">
             {lane.kind === "observed" ? "no recent observation" : "no forecast"}
@@ -64,11 +64,13 @@ function Lane({ lane }: { lane: RulerLane }) {
 export function StormRuler({
   forecast,
   observed,
+  nowMs,
 }: {
   forecast: KpForecast | null;
   observed: KpPoint[] | null;
+  nowMs: number;
 }) {
-  const { bands, lanes } = kpRuler(forecast, observed);
+  const { bands, lanes } = kpRuler(forecast, observed, nowMs);
   const label = `Kp scale from 0 to 9 with NOAA storm bands G0 to G5. ${lanes.map((l) => l.text).join(". ")}.`;
 
   return (
@@ -90,7 +92,7 @@ export function StormRuler({
         </div>
         <div className={ROW}>
           <span className="hidden md:block text-sm text-muted">Kp</span>
-          <div className={`${TRACK} flex h-8`}>
+          <div className={`${TRACK} flex h-9`}>
             {bands.map((b) => (
               <span
                 key={b.g}
@@ -101,8 +103,8 @@ export function StormRuler({
                   color: `var(--g${b.g}-fg)`,
                 }}
               >
-                {/* G5 is under 4% wide: on a phone its label sits just right of the strip. */}
-                <span className={b.g === 5 ? "max-md:absolute max-md:left-full max-md:pl-1 max-md:text-foreground" : ""}>
+                {/* G5 is under 4% wide: below lg its label sits just right of the strip. */}
+                <span className={b.g === 5 ? "max-lg:absolute max-lg:left-full max-lg:pl-1 max-lg:text-foreground" : ""}>
                   G{b.g}
                 </span>
               </span>

@@ -31,6 +31,10 @@ const opt = (obs: KpPoint[] = [], old = false) =>
   bandOption({ forecast: fc, observed: obs, utc: true, colors: COLORS, old });
 
 describe("bandOption", () => {
+  it("hides overlapping x labels", () => {
+    expect(opt().xAxis.axisLabel.hideOverlap).toBe(true);
+  });
+
   it("places each horizon at issue time plus h hours, carrying p10 and p90 for the tooltip", () => {
     expect(opt().series[2]!.data).toEqual([
       { name: "+1 h", value: [at(1), 4, 3, 6] },

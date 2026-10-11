@@ -22,14 +22,16 @@ export function StormHero({
     <section className="space-y-6">
       <div>
         <div role="status">
-          <h1 className="max-w-[24ch] text-[clamp(1.6rem,1rem+2.4vw,2.6rem)] font-[650] leading-[1.15] [font-stretch:112%]">
+          <h1 className="max-w-[30ch] text-[clamp(1.5rem,1rem+1.6vw,2.1rem)] font-[650] leading-[1.15] [font-stretch:112%]">
             {statusSummary(forecast, alert, nowMs)}
           </h1>
           <AlertLevel result={alert} caveat={alertCaveat(forecast, nowMs)} />
         </div>
         <Explainer explain={EXPLAIN.stormLevel} />
       </div>
-      <StormRuler forecast={forecast.ok ? forecast.data : null} observed={observed.ok ? observed.data : null} />
+      <StormRuler forecast={forecast.ok ? forecast.data : null} observed={observed.ok ? observed.data : null}
+        nowMs={nowMs}
+      />
     </section>
   );
 }

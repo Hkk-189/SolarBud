@@ -19,6 +19,7 @@ colors:
   primary-fill: "#c25100"
   primary-fill-hover: "#a84500"
   uncertainty: "#c25100"
+  dark-uncertainty: "#fe6e00"
   on-primary: "#ffffff"
   shell-base: "#000000"
   on-shell: "#ffffff"
@@ -97,6 +98,7 @@ rounded:
   sm: "6px"
   md: "8px"
   lg: "12px"
+  card: "10px"
   pill: "9999px"
 spacing:
   xs: "4px"
@@ -181,7 +183,7 @@ components:
     backgroundColor: "{colors.surface-elevated}"
     textColor: "{colors.on-background}"
     typography: "{typography.body-md}"
-    rounded: "10px"
+    rounded: "{rounded.card}"
     padding: "{spacing.xl}"
   chart-bar:
     backgroundColor: "rgba(254, 110, 0, 0.60)"
@@ -224,7 +226,6 @@ The visual identity revolves around cool neutrals plus a concentrated orange ban
 - **Focus Orange (`#F97015`):** Use for rings, active outlines, and theme-driven highlights.
 - **Shell Black (`#000000` rendered at 70% opacity):** Sidebar and top bar are never fully opaque. The shell should feel dark and glassy, not matte black.
 - **Storm-level colors (G0 to G5):** Geomagnetic storm severity uses its own semantic scale and **never the brand orange**, so a storm can never be mistaken for a button.
-- **Uncertainty orange:** orange for forecast uncertainty (the ruler whiskers) uses a darker shade on light backgrounds so the range stays visible.
   - G0 quiet: pale green (`#DCFCE7` on `#016630`)
   - G1: pale yellow (`#FEF9C2` on `#874B00`)
   - G2: amber (`#FFE08A` on `#6B3D00`)
@@ -233,6 +234,7 @@ The visual identity revolves around cool neutrals plus a concentrated orange ban
   - G5: dark red (`#82181A`, white text)
 
   Every pair meets 4.5:1. The badge always shows the text label (for example "G3") as well as the color, so meaning never depends on color alone.
+- **Uncertainty orange:** orange for forecast uncertainty (the ruler whiskers) uses a darker shade on light backgrounds so the range stays visible.
 
 Orange should be visually dominant, but not everywhere. The product works because most surfaces stay neutral and let orange carry state, motion, and emphasis.
 
@@ -241,7 +243,7 @@ One family: Archivo (variable weight and width axes), loaded with `next/font/goo
 
 - **Primary typeface:** `Archivo, ui-sans-serif, system-ui, sans-serif` (`--font-sans`).
 - **Numbers:** Archivo with `tabular-nums` so columns align. No monospace for ordinary text or values; `--font-mono` stays defined but unused for UI text.
-- **Page headlines:** Use bold weights and compact hierarchy. The main page title sits at `1.5rem` with strong weight rather than oversized hero typography.
+- **Page headlines:** Use bold weights and compact hierarchy. Other page titles sit at `1.5rem` with strong weight. The home page's status sentence is a deliberate large headline (about `2.1rem`, Archivo width 112, weight 650, about 30ch).
 - **Labels and card titles:** Sentence case, no tracking. Card titles are `0.95rem` semibold in the foreground colour.
 - **Body copy:** Standard UI sizing with moderate line height. Text should stay compact enough for dashboards.
 
@@ -302,7 +304,10 @@ Most analytical content sits in flat neutral panels with a thin rule and no shad
 Tables use the neutral base: thin borders, compact rows, and a header with a faint orange tint and Primary Fill (hover shade) label text.
 
 ### Storm-level badges
-Storm badges are the most important semantic cue in the product. They are pills using the G0 to G5 pairs above, carry the level text ("G0" to "G5"), and show "No data" in a neutral style when the level is unknown.
+G colors with the G label written are the only way severity is shown. On the home page they appear on the ruler's band strip and in the Kp table badges. Storm badges are pills using the G0 to G5 pairs above, carry the level text ("G0" to "G5"), and show "No data" in a neutral style when the level is unknown.
+
+### Home hero and storm ruler
+Band edges are the G thresholds (G1 = Kp 5- = 4.667). Whiskers are p10 to p90 in `--uncertainty`, dots are p50 in ink. The observed (Now) dot has no whisker and expires after 6 hours. One 300 ms whisker animation plays, and it respects reduced motion. Below `lg` the G5 label sits outside the strip.
 
 ### Charts
 Charts always show units on their axes, offer a UTC / local-time toggle, and draw forecast uncertainty (the p10 to p90 band) as a translucent orange area at 60% opacity with the median line on top. Chart colors outside orange stay within the neutral and semantic palette.
