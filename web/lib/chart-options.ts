@@ -20,6 +20,8 @@ interface LineInput {
   unit: string;
   utc: boolean;
   colors: ChartColors;
+  /** The forecast is older than the worker cadence allows: the marker says so instead of "now". */
+  old?: boolean;
 }
 
 const GRID = { left: 56, right: 16, top: 28, bottom: 28 };
@@ -86,6 +88,8 @@ interface BandInput {
   observed: KpPoint[];
   utc: boolean;
   colors: ChartColors;
+  /** The forecast is older than the worker cadence allows: the marker says "last forecast" instead of "now". */
+  old?: boolean;
 }
 
 const HOUR_MS = 3600 * 1000;
@@ -115,7 +119,7 @@ function observedSteps(observed: KpPoint[]): Point[] {
  * Observed Kp steps, then p10 to p90 as a translucent band (an invisible p10 base with the spread
  * stacked on it) under the median, with the G1 threshold and the issue time ("now") marked.
  */
-export function bandOption({ forecast, observed, utc, colors }: BandInput) {
+export function bandOption({ forecast, observed, utc, colors, old = false }: BandInput) {
   const t0 = Date.parse(forecast.issued_at);
   const at = (h: number) => t0 + h * HOUR_MS;
   const hidden = { opacity: 0 };
@@ -162,7 +166,7 @@ export function bandOption({ forecast, observed, utc, colors }: BandInput) {
             label: { formatter: "G1 (Kp 5-)", color: colors.g1, position: "insideEndTop" },
             lineStyle: { color: colors.g1, type: "dashed" },
           },
-          { xAxis: t0, label: { formatter: "now", color: colors.text, position: "end" }, lineStyle: { color: colors.text, type: "solid" } },
+          { xAxis: t0, label: { formatter: old ? "last forecast" : "now", color: colors.text, position: "end" }, lineStyle: { color: colors.text, type: "solid" } },
         ],
       },
     },

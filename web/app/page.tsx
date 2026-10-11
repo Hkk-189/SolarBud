@@ -1,3 +1,4 @@
+import { nowMs } from "@/lib/forecast-age";
 import { KpBandChart } from "@/components/charts/kp-band-chart";
 import { SolarWindCharts } from "@/components/charts/solar-wind-charts";
 import { KpForecastCard } from "@/components/cards/kp-forecast-card";
@@ -18,7 +19,7 @@ export default async function Home() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Space weather now</h1>
       <div className="grid gap-4 md:grid-cols-3">
-        <StormLevelCard result={kp} alert={alert} />
+        <StormLevelCard result={kp} alert={alert} nowMs={nowMs()} />
         <KpForecastCard result={kp} />
         <SolarWindCard result={wind} />
       </div>

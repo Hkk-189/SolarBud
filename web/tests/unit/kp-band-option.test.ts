@@ -27,7 +27,8 @@ const observed: KpPoint[] = [
   { time: "2024-05-10T15:00:00Z", kp: 4.667 },
 ];
 
-const opt = (obs: KpPoint[] = []) => bandOption({ forecast: fc, observed: obs, utc: true, colors: COLORS });
+const opt = (obs: KpPoint[] = [], old = false) =>
+  bandOption({ forecast: fc, observed: obs, utc: true, colors: COLORS, old });
 
 describe("bandOption", () => {
   it("places each horizon at issue time plus h hours, carrying p10 and p90 for the tooltip", () => {
@@ -112,5 +113,10 @@ describe("bandOption", () => {
     const now = marks.find((m) => m.xAxis !== undefined)!;
     expect(now.xAxis).toBe(t0);
     expect(now.label.formatter).toBe("now");
+  });
+
+  it("labels the marker last forecast, not now, when the forecast is old", () => {
+    const marks = opt([], true).series[2]!.markLine!.data;
+    expect(marks.find((m) => m.xAxis !== undefined)!.label.formatter).toBe("last forecast");
   });
 });

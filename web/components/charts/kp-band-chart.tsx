@@ -6,8 +6,10 @@ import { Card, Empty } from "@/components/cards/card";
 import { EChart } from "./echart";
 import { TimeZoneToggle, useTimeZone } from "./time-zone";
 import { REFRESH_MS, useChartColors } from "./use-chart-colors";
+import { useNow } from "./use-now";
 import type { KpForecast, KpPoint } from "@/lib/api/client";
 import { bandOption } from "@/lib/chart-options";
+import { forecastIsOld } from "@/lib/forecast-age";
 
 async function fetchForecast(): Promise<KpForecast> {
   const res = await fetch("/api/kp-forecast");
@@ -36,6 +38,7 @@ interface Props {
 export function KpBandChart({ initial, initialObserved, Chart = EChart }: Props) {
   const { utc } = useTimeZone();
   const colors = useChartColors();
+  const nowMs = useNow();
 
   const { data, isError } = useQuery({
     queryKey: ["kp-forecast"],
@@ -55,9 +58,11 @@ export function KpBandChart({ initial, initialObserved, Chart = EChart }: Props)
     initialData: initialObserved ?? undefined,
   });
 
+  const old = data ? forecastIsOld(data.issued_at, nowMs) : false;
+
   const option = useMemo(
-    () => (data ? bandOption({ forecast: data, observed: observed ?? [], utc, colors }) : {}),
-    [data, observed, utc, colors],
+    () => (data ? bandOption({ forecast: data, observed: observed ?? [], utc, colors, old }) : {}),
+    [data, observed, utc, colors, old],
   );
 
   const title = "Kp, last 24 h and next 6 h";
@@ -74,6 +79,9 @@ export function KpBandChart({ initial, initialObserved, Chart = EChart }: Props)
     <Card title={title}>
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs text-muted">
+          {old
+            ? "Forecast is over 15 min old, the worker may be down. "
+            : null}
           {data.data_stale
             ? "Based on stale L1 data. Treat with caution."
             : "Observed Kp, then the forecast median with its p10 to p90 range. Dashed line: G1 storm threshold (Kp 5-)."}
