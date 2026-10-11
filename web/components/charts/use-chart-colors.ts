@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ChartColors } from "@/lib/chart-options";
 
-const FALLBACK: ChartColors = { line: "#423d38", text: "#6f665d", grid: "#e3e0dd", band: "#fe6e00" };
+const FALLBACK: ChartColors = { line: "#423d38", text: "#6f665d", grid: "#e3e0dd", band: "#fe6e00", g1: "#874b00" };
 
 export const REFRESH_MS = 5 * 60 * 1000; // the worker's forecast cadence
 
@@ -20,6 +20,7 @@ export function useChartColors(): ChartColors {
         text: v("--muted", FALLBACK.text),
         grid: v("--outline", FALLBACK.grid),
         band: v("--primary", FALLBACK.band),
+        g1: v("--g1-line", FALLBACK.g1),
       });
     };
 

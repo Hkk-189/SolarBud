@@ -38,3 +38,12 @@ class SolarWindPoint(BaseModel):
     @field_serializer("time")
     def _ser(self, v: datetime) -> str:
         return iso_utc(v)
+
+
+class KpPoint(BaseModel):
+    time: AwareDatetime  # 3-h bin start
+    kp: float | None = None
+
+    @field_serializer("time")
+    def _ser(self, v: datetime) -> str:
+        return iso_utc(v)

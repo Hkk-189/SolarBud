@@ -30,6 +30,7 @@ colors:
   g0-fg: "#016630"
   g1-bg: "#fef9c2"
   g1-fg: "#874b00"
+  g1-line: "#874b00"
   g2-bg: "#ffe08a"
   g2-fg: "#6b3d00"
   g3-bg: "#ffe2e2"
@@ -42,6 +43,7 @@ colors:
   dark-surface: "#4a423a"
   dark-on-surface: "#fafaf9"
   dark-on-surface-muted: "#b9b3ac"
+  dark-g1-line: "#fef9c2"
 typography:
   headline-xl:
     fontFamily: "ui-sans-serif, system-ui, sans-serif"
