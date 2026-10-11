@@ -12,7 +12,12 @@ const NO_FORECAST = "We can't reach a current forecast, so we can't say whether 
 
 const ACTIVE = "A geomagnetic storm (G1 or stronger) is happening now.";
 
-const WARNING = "A geomagnetic storm (G1 or stronger) is likely within the next 6 hours.";
+const WARNING = "A storm warning is in effect: a G1 or stronger storm may arrive within the next 6 hours.";
+
+const DATA_STALE = "The latest forecast used out-of-date solar wind data, so treat the numbers below with caution.";
+
+const ACTIVE_STALE =
+  "A geomagnetic storm (G1 or stronger) is happening now. Solar wind data is out of date, so the forecast below is less reliable.";
 
 const QUIET = "Quiet: no geomagnetic storm expected in the next 6 hours.";
 
@@ -40,8 +45,22 @@ describe("statusSummary", () => {
     expect(statusSummary(forecast([2]), alert("none"), NOW + 20 * 60_000)).toBe(OUT_OF_DATE);
   });
 
-  it("says out of date for data_stale", () => {
-    expect(statusSummary(forecast([2], { data_stale: true }), alert("none"), NOW)).toBe(OUT_OF_DATE);
+  it("says the data is out of date for data_stale, with and without a warning", () => {
+    expect(statusSummary(forecast([2], { data_stale: true }), alert("none"), NOW)).toBe(DATA_STALE);
+    expect(statusSummary(forecast([2], { data_stale: true }), alert("warning"), NOW)).toBe(DATA_STALE);
+  });
+
+  it("an active storm with data_stale says the forecast is less reliable", () => {
+    expect(statusSummary(forecast([2], { data_stale: true }), alert("active"), NOW)).toBe(ACTIVE_STALE);
+  });
+
+  it("an empty forecast never reads as quiet", () => {
+    const empty: ApiResult<KpForecast> = {
+      ok: true,
+      data: { data_stale: false, issued_at: ISSUED, model_version: "t", horizons: [] },
+    };
+
+    expect(statusSummary(empty, alert("none"), NOW)).toBe(NO_FORECAST);
   });
 
   it("out of date wins over an active alert", () => {
@@ -58,7 +77,7 @@ describe("statusSummary", () => {
 
   it("reports raised activity from the highest p50", () => {
     expect(statusSummary(forecast([3, 5.2, 4]), alert("none"), NOW)).toBe(
-      "Activity is raised: the forecast touches G1, but not confidently enough for a warning.",
+      "Activity is raised: the forecast's likely value reaches G1 within the next 6 hours.",
     );
   });
 
@@ -72,11 +91,11 @@ describe("statusSummary", () => {
 
   it("an unknown alert level falls through to the forecast", () => {
     expect(statusSummary(forecast([2]), alert("watch"), NOW)).toBe(QUIET);
-    expect(statusSummary(forecast([6]), alert("watch"), NOW)).toContain("touches G2");
+    expect(statusSummary(forecast([6]), alert("watch"), NOW)).toContain("reaches G2");
   });
 
-  it("boundary: 4.66 is quiet, 4.667 touches G1", () => {
+  it("boundary: 4.66 is quiet, 4.667 reaches G1", () => {
     expect(statusSummary(forecast([4.66]), alert("none"), NOW)).toBe(QUIET);
-    expect(statusSummary(forecast([4.667]), alert("none"), NOW)).toContain("touches G1");
+    expect(statusSummary(forecast([4.667]), alert("none"), NOW)).toContain("reaches G1");
   });
 });

@@ -79,13 +79,15 @@ export function KpBandChart({ initial, initialObserved, Chart = EChart }: Props)
   return (
     <Card title={title} explain={EXPLAIN.kpChart}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-xs text-muted">
-          {old
-            ? "Forecast is over 15 min old, the worker may be down. "
-            : null}
-          {data.data_stale ? "Based on stale L1 data. Treat with caution." : null}
-        </p>
-        <TimeZoneToggle />
+        {old || data.data_stale ? (
+          <p className="text-xs text-muted">
+            {old ? "Forecast is over 15 min old, the worker may be down. " : null}
+            {data.data_stale ? "Based on stale L1 data. Treat with caution." : null}
+          </p>
+        ) : null}
+        <div className="ml-auto">
+          <TimeZoneToggle />
+        </div>
       </div>
       <Chart option={option} label="Observed Kp for the last 24 hours and the forecast for the next 6 hours, median with p10 to p90 band and the G1 threshold" />
     </Card>

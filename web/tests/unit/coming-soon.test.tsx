@@ -20,7 +20,7 @@ it("generates exactly the six sections and refuses others", async () => {
     ["api-docs", "aurora", "backtest", "cme", "gnss", "models"],
   );
   expect(dynamicParams).toBe(false);
-  await expect(Page({ params: Promise.resolve({ section: "foo" }) })).rejects.toThrow();
+  await expect(Page({ params: Promise.resolve({ section: "foo" }) })).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
 });
 
 it("covers every non-home sidebar link with a matching title", () => {

@@ -47,6 +47,7 @@ it("says nothing about age for a fresh forecast", () => {
   const fresh = { ...base, issued_at: new Date(Date.now() - 2 * 60 * 1000).toISOString() };
   const { container } = render(wrap(<KpBandChart initial={fresh} initialObserved={observed} Chart={FakeChart} />));
   expect(within(container).queryByText(/over 15 min old/i)).toBeNull();
+  expect(container.querySelectorAll("p.text-xs")).toHaveLength(0);
 });
 
 it("warns when the forecast was made from stale L1 data", () => {
