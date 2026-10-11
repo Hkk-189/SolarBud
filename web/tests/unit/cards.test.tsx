@@ -126,6 +126,16 @@ describe("StormLevelCard", () => {
 });
 
 describe("KpForecastCard", () => {
+  it("uses a sentence-case card title", () => {
+    render(<KpForecastCard result={{ ok: true, data: forecast }} />);
+    expect(screen.getByRole("heading", { level: 2 }).className).not.toContain("uppercase");
+  });
+  it("shows issue time and model on separate lines", () => {
+    const { container } = render(<KpForecastCard result={{ ok: true, data: forecast }} />);
+    expect(screen.getByText("Issued 2026-10-04 12:00 UTC")).toBeTruthy();
+    expect(screen.getByText("Model lgbm-1")).toBeTruthy();
+    expect(container.textContent).not.toContain("·");
+  });
   it("renders a row per horizon with quantiles and issued_at in UTC", () => {
     render(<KpForecastCard result={{ ok: true, data: forecast }} />);
     expect(screen.getAllByRole("row")).toHaveLength(4);

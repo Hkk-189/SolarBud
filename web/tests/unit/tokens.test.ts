@@ -59,6 +59,8 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     ["--foreground", "--surface"],
     ["--muted", "--background"],
     ["--muted", "--surface"],
+    ["--foreground", "--surface-elevated"],
+    ["--muted", "--surface-elevated"],
     ["--g1-line", "--surface-elevated"],
   ])("dark: %s on %s", (fg, bg) => {
     const merged = { ...light, ...dark };
@@ -68,6 +70,11 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
   it("brand orange is not used behind white text (it fails AA)", () => {
     expect(ratio(light["--on-primary"], light["--primary"])).toBeLessThan(4.5);
     expect(light["--primary-fill"]).not.toBe(light["--primary"]);
+  });
+
+  it("uses the cool neutral palette, not the old warm one", () => {
+    expect(light["--background"]).not.toBe("#fcfaf7");
+    expect(dark["--background"]).toBe("#0f1a24");
   });
 
   it("the OS-dark rule and the manual data-theme=dark rule stay identical", () => {
