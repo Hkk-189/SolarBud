@@ -101,3 +101,16 @@ describe("kpRuler", () => {
     );
   });
 });
+
+describe("kpRuler with non-finite values", () => {
+  it("treats a NaN horizon value as no forecast", () => {
+    const lanes = kpRuler(fc([[3, 2, Number.NaN, 5]]), null).lanes;
+
+    expect(lanes[2].p50).toBeNull();
+    expect(lanes[2].text).toBe("In 3 hours: no forecast");
+  });
+
+  it("treats a NaN observed Kp as no observation", () => {
+    expect(kpRuler(null, [pt(Number.NaN)]).lanes[0].text).toBe("Now: no recent observation");
+  });
+});

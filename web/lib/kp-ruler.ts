@@ -30,7 +30,7 @@ function observedLane(observed: KpPoint[] | null): RulerLane {
   const last = observed?.findLast((p) => p.kp != null);
   const kp = last?.kp;
 
-  if (kp == null) {
+  if (kp == null || !Number.isFinite(kp)) {
     return { label: "Now", kind: "observed", p50: null, text: "Now: no recent observation" };
   }
 
@@ -46,7 +46,7 @@ export function kpRuler(forecast: KpForecast | null, observed: KpPoint[] | null)
   for (const { h, label, spoken } of HORIZONS) {
     const hz = forecast?.horizons.find((x) => x.horizon_h === h);
 
-    if (!hz) {
+    if (!hz || ![hz.p10, hz.p50, hz.p90].every(Number.isFinite)) {
       lanes.push({ label, kind: "forecast", p50: null, text: `${spoken}: no forecast` });
       continue;
     }

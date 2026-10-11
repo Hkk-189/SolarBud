@@ -81,3 +81,14 @@ describe("design tokens meet WCAG AA (4.5:1) for text", () => {
     expect(darkMedia).toEqual(dark);
   });
 });
+
+describe("--uncertainty meets the 3:1 non-text minimum", () => {
+  it.each([
+    ["light", light],
+    ["dark", dark],
+    ["dark (media)", darkMedia],
+  ])("%s", (_name, vars) => {
+    expect(text(vars, "--uncertainty", "--surface-elevated")).toBeGreaterThanOrEqual(3);
+    expect(text(vars, "--uncertainty", "--background")).toBeGreaterThanOrEqual(3);
+  });
+});

@@ -29,10 +29,10 @@ function Whisker({ lane }: { lane: RulerLane }) {
 
   return (
     <span
-      className="ruler-whisker absolute top-1/2 h-3 -translate-y-1/2 border-x-2 border-primary"
+      className="ruler-whisker absolute top-1/2 h-3 -translate-y-1/2 border-x-2 border-uncertainty"
       style={{ left: pct(p10), width: pct(span), transformOrigin: `${origin}% 50%` }}
     >
-      <span className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-primary" />
+      <span className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-uncertainty" />
     </span>
   );
 }

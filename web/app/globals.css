@@ -17,6 +17,7 @@
   --primary-focus: #f97015;
   --primary-fill: #c25100;
   --primary-fill-hover: #a84500;
+  --uncertainty: #c25100; /* range whiskers: darker orange on light backgrounds for 3:1 */
   --on-primary: #ffffff;
   --success: #00c758;
   --warning: #edb200;
@@ -54,6 +55,7 @@
     --warning: #edb200;
     --danger: #fb2c36;
     --g1-line: #fef9c2;
+    --uncertainty: #fe6e00;
   }
 }
 
@@ -70,6 +72,7 @@
   --warning: #edb200;
   --danger: #fb2c36;
   --g1-line: #fef9c2;
+  --uncertainty: #fe6e00;
 }
 
 @theme inline {
@@ -81,6 +84,7 @@
   --color-muted: var(--muted);
   --color-outline: var(--outline);
   --color-primary: var(--primary);
+  --color-uncertainty: var(--uncertainty);
   --color-primary-fill: var(--primary-fill);
   --color-primary-fill-hover: var(--primary-fill-hover);
   --color-on-primary: var(--on-primary);
@@ -115,7 +119,11 @@ body {
 /* The ruler's one motion moment: whiskers grow out from their p50 dot once on first paint. */
 @keyframes ruler-extend {
   from {
-    transform: translateY(-50%) scaleX(0);
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
   }
 }
 

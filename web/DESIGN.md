@@ -18,6 +18,7 @@ colors:
   primary-focus: "#f97015"
   primary-fill: "#c25100"
   primary-fill-hover: "#a84500"
+  uncertainty: "#c25100"
   on-primary: "#ffffff"
   shell-base: "#000000"
   on-shell: "#ffffff"
@@ -223,6 +224,7 @@ The visual identity revolves around cool neutrals plus a concentrated orange ban
 - **Focus Orange (`#F97015`):** Use for rings, active outlines, and theme-driven highlights.
 - **Shell Black (`#000000` rendered at 70% opacity):** Sidebar and top bar are never fully opaque. The shell should feel dark and glassy, not matte black.
 - **Storm-level colors (G0 to G5):** Geomagnetic storm severity uses its own semantic scale and **never the brand orange**, so a storm can never be mistaken for a button.
+- **Uncertainty orange:** orange for forecast uncertainty (the ruler whiskers) uses a darker shade on light backgrounds so the range stays visible.
   - G0 quiet: pale green (`#DCFCE7` on `#016630`)
   - G1: pale yellow (`#FEF9C2` on `#874B00`)
   - G2: amber (`#FFE08A` on `#6B3D00`)
