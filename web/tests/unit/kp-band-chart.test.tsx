@@ -32,6 +32,17 @@ it("draws the band from the server-provided forecast and names the G1 line", () 
   expect(screen.getByText(/G1/)).toBeTruthy();
 });
 
+it("says the forecast is over 15 minutes old once it is", () => {
+  const { container } = render(wrap(<KpBandChart initial={base} initialObserved={observed} Chart={FakeChart} />));
+  expect(within(container).getByText(/over 15 min old/i)).toBeTruthy();
+});
+
+it("says nothing about age for a fresh forecast", () => {
+  const fresh = { ...base, issued_at: new Date(Date.now() - 2 * 60 * 1000).toISOString() };
+  const { container } = render(wrap(<KpBandChart initial={fresh} initialObserved={observed} Chart={FakeChart} />));
+  expect(within(container).queryByText(/over 15 min old/i)).toBeNull();
+});
+
 it("warns when the forecast was made from stale L1 data", () => {
   render(wrap(<KpBandChart initial={{ ...base, data_stale: true }} initialObserved={observed} Chart={FakeChart} />));
   expect(screen.getByText(/stale/i)).toBeTruthy();
