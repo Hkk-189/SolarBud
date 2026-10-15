@@ -52,7 +52,7 @@ export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpC
 };
 
 export const COMING_SOON: Record<
-  "aurora" | "gnss" | "cme" | "backtest" | "models" | "api-docs",
+  "aurora" | "gnss" | "cme",
   { title: string; body: string; phase: string }
 > = {
   aurora: {
@@ -69,20 +69,5 @@ export const COMING_SOON: Record<
     title: "CME tracker",
     body: "Solar eruptions (CMEs) heading towards Earth and when they are predicted to arrive.",
     phase: "Phase 3",
-  },
-  backtest: {
-    title: "Backtests",
-    body: "How SolarBud's forecasts and alerts performed on five well-known past storms.",
-    phase: "Phase 4",
-  },
-  models: {
-    title: "Models",
-    body: "What the forecast model is, how it was trained and how accurate it is.",
-    phase: "Phase 4",
-  },
-  "api-docs": {
-    title: "API docs",
-    body: "How to fetch SolarBud's forecasts from its public API.",
-    phase: "Phase 4",
   },
 };

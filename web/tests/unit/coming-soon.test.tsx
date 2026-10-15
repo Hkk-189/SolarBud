@@ -15,16 +15,18 @@ it("renders the GNSS placeholder", async () => {
   expect(screen.getByRole("link", { name: "Back to Overview" }).getAttribute("href")).toBe("/");
 });
 
-it("generates exactly the six sections and refuses others", async () => {
+it("generates exactly the three unbuilt sections and refuses others", async () => {
   expect(generateStaticParams().map((p) => p.section).sort()).toEqual(
-    ["api-docs", "aurora", "backtest", "cme", "gnss", "models"],
+    ["aurora", "cme", "gnss"],
   );
   expect(dynamicParams).toBe(false);
   await expect(Page({ params: Promise.resolve({ section: "foo" }) })).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
 });
 
 it("covers every non-home sidebar link with a matching title", () => {
-  for (const { href, label } of NAV.filter((n) => n.href !== "/")) {
+  const built = ["/backtest", "/models", "/api-docs"];
+
+  for (const { href, label } of NAV.filter((n) => n.href !== "/" && !built.includes(n.href))) {
     const entry = Object.entries(COMING_SOON).find(([key]) => `/${key}` === href);
 
     expect(entry, href).toBeDefined();
