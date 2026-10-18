@@ -3,7 +3,7 @@ export interface Explanation {
   details: string[];
 }
 
-export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpChart" | "solarWindCharts" | "aurora" | "gnss", Explanation> = {
+export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpChart" | "solarWindCharts" | "aurora" | "gnss" | "verification", Explanation> = {
   stormLevel: {
     summary:
       "Where Earth's magnetic field is now and is forecast to be over the next 6 hours, on NOAA's scale from G0 (quiet) to G5 (extreme).",
@@ -56,6 +56,15 @@ export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpC
       "Storms disturb the ionosphere, which can degrade GPS accuracy and RTK fixes.",
       "Risk uses the likely Kp; Could reach uses the high end of the range.",
       "This is a simple rule from the storm level, not a measurement of the ionosphere.",
+    ],
+  },
+  verification: {
+    summary:
+      "Each point is a forecast made 3 hours before a 3-hour period began. The grey steps are the Kp measured for that period afterwards.",
+    details: [
+      "The orange band is the range we expected: about 8 times in 10 the measured value should land inside it.",
+      "Only periods that have finished are shown, and a gap means no forecast was issued then, for example while the worker was off.",
+      "In big storms the measured value often ends up above the band.",
     ],
   },
   solarWindCharts: {

@@ -8,6 +8,8 @@ export type SolarWindPoint = components["schemas"]["SolarWindPoint"];
 
 export type KpPoint = components["schemas"]["KpPoint"];
 
+export type VerificationPoint = components["schemas"]["VerificationPoint"];
+
 export type ApiResult<T> = { ok: true; data: T } | { ok: false };
 
 const TIMEOUT_MS = 3000;
@@ -33,6 +35,8 @@ async function get<T>(path: string): Promise<ApiResult<T>> {
 }
 
 export const getKpForecast = () => get<KpForecast>("/v1/forecast/kp");
+
+export const getVerification = () => get<VerificationPoint[]>("/v1/forecast/verification?horizon=3&hours=48");
 
 export const getAlertCurrent = () => get<AlertStatus>("/v1/alerts/current");
 

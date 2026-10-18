@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { VerificationChart } from "@/components/charts/verification-chart";
+import { getVerification } from "@/lib/api/client";
 import { COVERAGE, MODEL_LABEL, SCORES } from "@/lib/model-card";
 
 export const metadata: Metadata = { title: "Models" };
@@ -11,7 +13,9 @@ const pod7 = (h: number) => pct(lgbm.find((r) => r.horizon === h)?.pod7 ?? 0);
 
 const signed = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(3)}`;
 
-export default function Models() {
+export default async function Models() {
+  const verification = await getVerification();
+
   return (
     <div className="space-y-6">
       <header className="max-w-prose space-y-2">
@@ -58,6 +62,8 @@ export default function Models() {
           </table>
         </div>
       </section>
+
+      <VerificationChart initial={verification.ok ? verification.data : null} />
 
       <section className="rounded-card border border-outline bg-card p-6">
         <h2 className="text-[0.95rem] font-semibold">What it can&apos;t do yet</h2>

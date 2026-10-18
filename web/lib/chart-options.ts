@@ -1,5 +1,5 @@
 import type { EChartsCoreOption } from "echarts/core";
-import type { KpForecast, KpPoint, SolarWindPoint } from "@/lib/api/client";
+import type { KpForecast, KpPoint, SolarWindPoint, VerificationPoint } from "@/lib/api/client";
 import { G1_KP } from "@/lib/g-level";
 
 export type WindField = "speed_kms" | "density_cm3" | "bz_gsm_nt" | "bt_nt";
@@ -179,6 +179,79 @@ export function bandOption({ forecast, observed, utc, colors, old = false }: Ban
       lineStyle: { color: colors.text, width: 2 },
       itemStyle: { color: colors.text },
       data: observedSteps(observed),
+    },
+  ];
+
+  return {
+    useUTC: utc,
+    animation: false,
+    grid: GRID,
+    tooltip: { trigger: "item" },
+    xAxis: xAxis(colors),
+    yAxis: { type: "value", name: "Kp", min: 0, max: 9, interval: 3, ...yAxisStyle(colors) },
+    series,
+  } satisfies EChartsCoreOption;
+}
+
+interface VerificationInput {
+  points: VerificationPoint[];
+  utc: boolean;
+  colors: ChartColors;
+}
+
+/**
+ * Forecasts made 3 h ahead against the Kp measured afterwards: the p10 to p90 band and the median at the
+ * middle of each 3 h period, with the observed Kp as steps over it. Unobserved periods draw no step.
+ */
+export function verificationOption({ points, utc, colors }: VerificationInput) {
+  const mid = (p: VerificationPoint) => Date.parse(p.bin_start) + BIN_MS / 2;
+  const hidden = { opacity: 0 };
+  const noTooltip = { show: false } as const;
+
+  const series: BandSeries[] = [
+    {
+      type: "line",
+      stack: "band",
+      showSymbol: false,
+      lineStyle: hidden,
+      tooltip: noTooltip,
+      data: points.map((p) => [mid(p), p.p10]),
+    },
+    {
+      type: "line",
+      stack: "band",
+      showSymbol: false,
+      lineStyle: hidden,
+      tooltip: noTooltip,
+      areaStyle: { color: colors.band, opacity: 0.6 },
+      data: points.map((p) => [mid(p), p.p90 - p.p10]),
+    },
+    {
+      type: "line",
+      name: "Forecast made 3 h ahead",
+      showSymbol: true,
+      lineStyle: { color: colors.line, width: 2 },
+      itemStyle: { color: colors.line },
+      data: points.map((p) => [mid(p), round1(p.p50)]),
+      markLine: {
+        silent: true,
+        symbol: "none",
+        data: [
+          {
+            yAxis: G1_KP,
+            label: { formatter: "G1 (Kp 5-)", color: colors.g1, position: "insideEndTop" },
+            lineStyle: { color: colors.g1, type: "dashed" },
+          },
+        ],
+      },
+    },
+    {
+      type: "line",
+      name: "Observed Kp",
+      showSymbol: false,
+      lineStyle: { color: colors.text, width: 2 },
+      itemStyle: { color: colors.text },
+      data: observedSteps(points.flatMap((p) => (p.observed_kp === null ? [] : [{ time: p.bin_start, kp: p.observed_kp }]))),
     },
   ];
 
