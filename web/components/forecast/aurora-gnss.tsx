@@ -1,10 +1,13 @@
 "use client";
 
 import { Card, Empty } from "@/components/cards/card";
+import { useState } from "react";
 import { useKpForecast } from "@/components/charts/use-kp-forecast";
 import { useNow } from "@/components/charts/use-now";
 import { AuroraMap } from "@/components/forecast/aurora-map";
+import { MyLocation } from "@/components/forecast/my-location";
 import type { KpForecast } from "@/lib/api/client";
+import type { Place } from "@/lib/places";
 import { AURORA_FLOOR_LAT, auroraLatitude, GNSS_ADVICE, gnssRisk } from "@/lib/aurora-gnss";
 import { EXPLAIN } from "@/lib/explanations";
 import { forecastIsOld } from "@/lib/forecast-age";
@@ -66,6 +69,45 @@ const lat = (kp: number) => {
   return v === null ? `Poleward of ${AURORA_FLOOR_LAT}°` : `about ${Math.round(v)}°`;
 };
 
+function AuroraBody({ d }: { d: KpForecast }) {
+  const [place, setPlace] = useState<Place | null>(null);
+  const likelyKp = Math.max(...d.horizons.map((h) => h.p50));
+  const highKp = Math.max(...d.horizons.map((h) => h.p90));
+
+  return (
+    <Card title="Where the aurora may reach" explain={EXPLAIN.aurora}>
+      <p className="mb-3 text-sm text-muted">The map shows the highest value forecast over the next 6 hours.</p>
+      <AuroraMap likelyKp={likelyKp} highKp={highKp} marker={place} />
+      <MyLocation likelyKp={likelyKp} highKp={highKp} onChange={setPlace} />
+      <table className="mt-4 w-full text-sm">
+        <thead>
+          <tr>
+            <th className={HEAD}>Ahead</th>
+            <th className={HEAD}>Likely Kp</th>
+            <th className={HEAD}>Visible down to</th>
+            <th className={HEAD}>Could reach (high)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {d.horizons.map((h) => (
+            <tr key={h.horizon_h} className="border-t border-outline">
+              <th scope="row" className="py-2 pr-2 text-left font-medium">
+                +{h.horizon_h} h
+              </th>
+              <td className="py-2 pr-2 tabular-nums">{formatNum(h.p50, 1)}</td>
+              <td className="py-2 pr-2">{lat(h.p50)}</td>
+              <td className="py-2">{lat(h.p90)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 text-sm text-muted">
+        From India the aurora is visible only in extreme storms, such as the one seen from Ladakh in May 2024.
+      </p>
+    </Card>
+  );
+}
+
 export function AuroraView({ initial }: Props) {
   return (
     <Page
@@ -73,41 +115,7 @@ export function AuroraView({ initial }: Props) {
       intro="How far towards the equator the aurora may be visible, from the Kp forecast. Latitudes are geomagnetic, which differs from the latitude on a map."
       initial={initial}
     >
-      {(d) => (
-        <Card title="Where the aurora may reach" explain={EXPLAIN.aurora}>
-          <p className="mb-3 text-sm text-muted">The map shows the highest value forecast over the next 6 hours.</p>
-          <AuroraMap
-            likelyKp={Math.max(...d.horizons.map((h) => h.p50))}
-            highKp={Math.max(...d.horizons.map((h) => h.p90))}
-            marker={null}
-          />
-          <table className="mt-4 w-full text-sm">
-            <thead>
-              <tr>
-                <th className={HEAD}>Ahead</th>
-                <th className={HEAD}>Likely Kp</th>
-                <th className={HEAD}>Visible down to</th>
-                <th className={HEAD}>Could reach (high)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.horizons.map((h) => (
-                <tr key={h.horizon_h} className="border-t border-outline">
-                  <th scope="row" className="py-2 pr-2 text-left font-medium">
-                    +{h.horizon_h} h
-                  </th>
-                  <td className="py-2 pr-2 tabular-nums">{formatNum(h.p50, 1)}</td>
-                  <td className="py-2 pr-2">{lat(h.p50)}</td>
-                  <td className="py-2">{lat(h.p90)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-3 text-sm text-muted">
-            From India the aurora is visible only in extreme storms, such as the one seen from Ladakh in May 2024.
-          </p>
-        </Card>
-      )}
+      {(d) => <AuroraBody d={d} />}
     </Page>
   );
 }

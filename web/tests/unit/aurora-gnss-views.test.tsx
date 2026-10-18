@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuroraView, GnssView } from "@/components/forecast/aurora-gnss";
 import type { KpForecast } from "@/lib/api/client";
@@ -50,6 +50,12 @@ describe("AuroraView", () => {
     expect(screen.getByText(/highest value forecast over the next 6 hours/)).toBeTruthy();
     await waitFor(() => expect(screen.getByText(/Map unavailable/)).toBeTruthy());
     expect(screen.getByRole("table")).toBeTruthy();
+  });
+  it("lets a visitor check a place against the highest forecast Kp", () => {
+    render(wrap(<AuroraView initial={forecast} />));
+    fireEvent.change(screen.getByLabelText("Place"), { target: { value: "Tromsø" } });
+    // Highest p50 is Kp 7 (52 degrees), highest p90 is Kp 8 (50 degrees); Tromsø is about 67 degrees geomagnetic.
+    expect(screen.getByText(/Likely: in reach/)).toBeTruthy();
   });
   it("says so when the forecast is old", () => {
     at("2026-10-11T00:30:00Z");
