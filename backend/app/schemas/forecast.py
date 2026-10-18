@@ -47,3 +47,16 @@ class KpPoint(BaseModel):
     @field_serializer("time")
     def _ser(self, v: datetime) -> str:
         return iso_utc(v)
+
+
+class VerificationPoint(BaseModel):
+    bin_start: AwareDatetime
+    issued_at: AwareDatetime
+    p10: float
+    p50: float
+    p90: float
+    observed_kp: float | None = None
+
+    @field_serializer("bin_start", "issued_at")
+    def _ser(self, v: datetime) -> str:
+        return iso_utc(v)

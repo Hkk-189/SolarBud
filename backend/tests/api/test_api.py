@@ -92,3 +92,53 @@ def test_alert_current_warning():
     body = r.json()
     assert body["level"] == "warning" and body["since"] == "2024-05-10T18:05:00Z"
     assert body["last_event"]["issued_at"] == "2024-05-10T18:05:00Z"
+
+
+def _verification_client():
+    app = create_app()
+    now = datetime(2024, 5, 10, 22, 0, tzinfo=UTC)
+    issued = [
+        {
+            "issued_at": datetime(2024, 5, 10, 15, 30, tzinfo=UTC),
+            "horizons": FC["horizons"],
+        },  # bin 18:00, complete
+        {
+            "issued_at": datetime(2024, 5, 10, 20, 30, tzinfo=UTC),
+            "horizons": FC["horizons"],
+        },  # bin 21:00, not over yet
+    ]
+
+    async def forecasts(start, end):
+        return issued
+
+    async def kp(start, end):
+        return [{"time": datetime(2024, 5, 10, 18, 0, tzinfo=UTC), "kp": 6.0}]
+
+    app.dependency_overrides[deps.forecast_range] = lambda: forecasts
+    app.dependency_overrides[deps.kp_range] = lambda: kp
+    app.dependency_overrides[deps.utc_now] = lambda: lambda: now
+    return TestClient(app)
+
+
+def test_verification_contract_lists_only_completed_bins():
+    r = _verification_client().get("/v1/forecast/verification").json()
+    assert r == [
+        {
+            "bin_start": "2024-05-10T18:00:00Z",
+            "issued_at": "2024-05-10T15:30:00Z",
+            "p10": 4.0,
+            "p50": 5.0,
+            "p90": 6.5,
+            "observed_kp": 6.0,
+        }
+    ]
+
+
+def test_verification_rejects_a_bad_horizon_or_window():
+    c = _verification_client()
+    assert c.get("/v1/forecast/verification", params={"horizon": 2}).status_code == 422
+    assert c.get("/v1/forecast/verification", params={"hours": 0}).status_code == 422
+    assert c.get("/v1/forecast/verification", params={"hours": 169}).status_code == 422
+    assert (
+        c.get("/v1/forecast/verification", params={"horizon": 6, "hours": 168}).status_code == 200
+    )
