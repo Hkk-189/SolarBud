@@ -242,7 +242,7 @@ Orange should be visually dominant, but not everywhere. The product works becaus
 One family: Archivo (variable weight and width axes), loaded with `next/font/google` and self-hosted at build (ADR-0007). It gives the UI a firm, technical voice without an editorial feel.
 
 - **Primary typeface:** `Archivo, ui-sans-serif, system-ui, sans-serif` (`--font-sans`).
-- **Numbers:** Archivo with `tabular-nums` so columns align. No monospace for ordinary text or values; `--font-mono` stays defined but unused for UI text.
+- **Numbers:** Archivo with `tabular-nums` so columns align. No monospace for ordinary text or values.
 - **Page headlines:** Use bold weights and compact hierarchy. Other page titles sit at `1.5rem` with strong weight. The home page's status sentence is a deliberate large headline (about `2.1rem`, Archivo width 112, weight 650, about 30ch).
 - **Labels and card titles:** Sentence case, no tracking. Card titles are `0.95rem` semibold in the foreground colour.
 - **Body copy:** Standard UI sizing with moderate line height. Text should stay compact enough for dashboards.

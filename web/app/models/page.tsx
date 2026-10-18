@@ -5,6 +5,10 @@ export const metadata: Metadata = { title: "Models" };
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
+const lgbm = SCORES.filter((r) => r.model === "lgbm-p50");
+
+const pod7 = (h: number) => pct(lgbm.find((r) => r.horizon === h)?.pod7 ?? 0);
+
 const signed = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(3)}`;
 
 export default function Models() {
@@ -59,7 +63,7 @@ export default function Models() {
         <h2 className="text-[0.95rem] font-semibold">What it can&apos;t do yet</h2>
         <ul className="mt-2 max-w-prose list-disc space-y-1 pl-5 text-sm text-muted">
           <li>
-            Very strong storms (Kp 7 or more) are caught only 33% of the time at +3 h and 5% at +6 h. Do not rely on
+            Very strong storms (Kp 7 or more) are caught only {pod7(3)} of the time at +3 h and {pod7(6)} at +6 h. Do not rely on
             the forecast to rule one out.
           </li>
           <li>
