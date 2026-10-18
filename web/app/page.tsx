@@ -3,7 +3,7 @@ import { KpBandChart } from "@/components/charts/kp-band-chart";
 import { SolarWindCharts } from "@/components/charts/solar-wind-charts";
 import { KpForecastCard } from "@/components/cards/kp-forecast-card";
 import { SolarWindCard } from "@/components/cards/solar-wind-card";
-import { StormHero } from "@/components/home/storm-hero";
+import { LiveStormHero } from "@/components/home/live-storm-hero";
 import { getAlertCurrent, getKpForecast, getKpObserved, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
 
 export default async function Home() {
@@ -19,7 +19,7 @@ export default async function Home() {
 
   return (
     <div className="space-y-8">
-      <StormHero forecast={kp} alert={alert} observed={observed} nowMs={now} />
+      <LiveStormHero forecast={kp} alert={alert} observed={observed} serverNowMs={now} />
       <div className="grid items-start gap-4 md:grid-cols-[2fr_1fr]">
         <KpBandChart initial={kp.ok ? kp.data : null} initialObserved={observed.ok ? observed.data : null} />
         <div className="space-y-4">
