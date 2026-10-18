@@ -4,7 +4,15 @@ import type { ECharts, EChartsCoreOption } from "echarts/core";
 import { useEffect, useRef } from "react";
 
 /** ECharts has no SSR (canvas), so it is loaded after hydration and the box keeps its height. */
-export function EChart({ option, label }: { option: EChartsCoreOption; label: string }) {
+export function EChart({
+  option,
+  label,
+  heightClass = "h-48",
+}: {
+  option: EChartsCoreOption;
+  label: string;
+  heightClass?: string;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const chart = useRef<ECharts | null>(null);
   const latest = useRef(option);
@@ -34,5 +42,5 @@ export function EChart({ option, label }: { option: EChartsCoreOption; label: st
     chart.current?.setOption(option, true);
   }, [option]);
 
-  return <div ref={box} role="img" aria-label={label} className="h-48 w-full" />;
+  return <div ref={box} role="img" aria-label={label} className={`${heightClass} w-full`} />;
 }

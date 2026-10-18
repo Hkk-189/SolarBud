@@ -3,6 +3,7 @@
 import { Card, Empty } from "@/components/cards/card";
 import { useKpForecast } from "@/components/charts/use-kp-forecast";
 import { useNow } from "@/components/charts/use-now";
+import { AuroraMap } from "@/components/forecast/aurora-map";
 import type { KpForecast } from "@/lib/api/client";
 import { AURORA_FLOOR_LAT, auroraLatitude, GNSS_ADVICE, gnssRisk } from "@/lib/aurora-gnss";
 import { EXPLAIN } from "@/lib/explanations";
@@ -74,7 +75,13 @@ export function AuroraView({ initial }: Props) {
     >
       {(d) => (
         <Card title="Where the aurora may reach" explain={EXPLAIN.aurora}>
-          <table className="w-full text-sm">
+          <p className="mb-3 text-sm text-muted">The map shows the highest value forecast over the next 6 hours.</p>
+          <AuroraMap
+            likelyKp={Math.max(...d.horizons.map((h) => h.p50))}
+            highKp={Math.max(...d.horizons.map((h) => h.p90))}
+            marker={null}
+          />
+          <table className="mt-4 w-full text-sm">
             <thead>
               <tr>
                 <th className={HEAD}>Ahead</th>

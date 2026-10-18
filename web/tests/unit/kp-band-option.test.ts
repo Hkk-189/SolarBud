@@ -3,7 +3,7 @@ import type { KpForecast, KpPoint } from "@/lib/api/client";
 import { bandOption } from "@/lib/chart-options";
 import { G1_KP, gLevel } from "@/lib/g-level";
 
-const COLORS = { line: "#423d38", text: "#6f665d", grid: "#e3e0dd", band: "#fe6e00", g1: "#874b00" };
+const COLORS = { line: "#423d38", text: "#6f665d", grid: "#e3e0dd", band: "#fe6e00", g1: "#874b00", uncertainty: "#c25100" };
 
 const fc: KpForecast = {
   issued_at: "2024-05-10T18:00:00Z",

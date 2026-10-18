@@ -12,6 +12,8 @@ export interface ChartColors {
   band: string;
   /** The G1 threshold line; a G-scale color, never brand orange. */
   g1: string;
+  /** Darker orange for ranges on light backgrounds (the ruler's whiskers, the map's could-reach line). */
+  uncertainty: string;
 }
 
 interface LineInput {

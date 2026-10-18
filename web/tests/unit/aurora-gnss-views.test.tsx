@@ -17,9 +17,12 @@ const forecast: KpForecast = {
 
 const wrap = (ui: React.ReactNode) => <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>;
 
+const media = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+
 const at = (iso: string) => vi.setSystemTime(new Date(iso));
 
 beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => media); // jsdom has no matchMedia
   vi.useFakeTimers({ toFake: ["Date"] });
   at("2026-10-11T00:05:00Z");
 });
@@ -40,6 +43,13 @@ describe("AuroraView", () => {
     expect(within(rows[1]).getByText("about 52°")).toBeTruthy(); // +1 h p90 = Kp 7
     expect(within(rows[2]).getAllByText("Poleward of 56°")).toHaveLength(2);
     expect(screen.getByText(/only in extreme storms/)).toBeTruthy();
+  });
+  it("states what the map shows and keeps the table when the map cannot load", async () => {
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("nope", { status: 404 })));
+    render(wrap(<AuroraView initial={forecast} />));
+    expect(screen.getByText(/highest value forecast over the next 6 hours/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByText(/Map unavailable/)).toBeTruthy());
+    expect(screen.getByRole("table")).toBeTruthy();
   });
   it("says so when the forecast is old", () => {
     at("2026-10-11T00:30:00Z");
