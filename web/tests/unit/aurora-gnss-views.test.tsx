@@ -1,9 +1,8 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuroraView, GnssView } from "@/components/forecast/aurora-gnss";
 import type { KpForecast } from "@/lib/api/client";
-
-afterEach(cleanup);
 
 const forecast: KpForecast = {
   data_stale: false,
@@ -16,13 +15,24 @@ const forecast: KpForecast = {
   ],
 };
 
-const NOW = Date.parse("2026-10-11T00:05:00Z");
+const wrap = (ui: React.ReactNode) => <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>;
 
-const down = { ok: false } as const;
+const at = (iso: string) => vi.setSystemTime(new Date(iso));
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  at("2026-10-11T00:05:00Z");
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe("AuroraView", () => {
   it("shows the visibility latitude from the likely and the high Kp", () => {
-    render(<AuroraView nowMs={NOW} result={{ ok: true, data: forecast }} />);
+    render(wrap(<AuroraView initial={forecast} />));
     const rows = within(screen.getByRole("table")).getAllByRole("row");
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
@@ -31,21 +41,26 @@ describe("AuroraView", () => {
     expect(within(rows[2]).getAllByText("Poleward of 56°")).toHaveLength(2);
     expect(screen.getByText(/only in extreme storms/)).toBeTruthy();
   });
-  it("says so when the forecast is old or unavailable", () => {
-    const old = Date.parse("2026-10-11T00:30:00Z");
-    const { unmount } = render(<AuroraView nowMs={old} result={{ ok: true, data: forecast }} />);
-
+  it("says so when the forecast is old", () => {
+    at("2026-10-11T00:30:00Z");
+    render(wrap(<AuroraView initial={forecast} />));
     expect(screen.getByRole("status").textContent).toMatch(/older than 15 minutes/);
-    unmount();
-    render(<AuroraView nowMs={NOW} result={down} />);
-    expect(screen.getByText(/Forecast unavailable/)).toBeTruthy();
+  });
+  it("shows when the page last refreshed", () => {
+    render(wrap(<AuroraView initial={forecast} />));
+    expect(screen.getByText(/Refreshed 2026-10-11 00:05 UTC/)).toBeTruthy();
+  });
+  it("says so when there is no forecast and the API stays down", async () => {
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 503 })));
+    render(wrap(<AuroraView initial={null} />));
+    await waitFor(() => expect(screen.getByText(/Forecast unavailable/)).toBeTruthy(), { timeout: 4000 });
     expect(screen.queryByRole("table")).toBeNull();
   });
 });
 
 describe("GnssView", () => {
   it("shows a risk per horizon with advice and the 6-hour and scintillation caveats", () => {
-    render(<GnssView nowMs={NOW} result={{ ok: true, data: forecast }} />);
+    render(wrap(<GnssView initial={forecast} />));
     const rows = within(screen.getByRole("table")).getAllByRole("row");
 
     expect(within(rows[1]).getAllByText("Moderate")).toHaveLength(1); // p50 Kp 5 = G1
@@ -55,8 +70,9 @@ describe("GnssView", () => {
     expect(screen.getByText(/next 6 hours only/)).toBeTruthy();
     expect(screen.getByText(/scintillation/i)).toBeTruthy();
   });
-  it("says so when the forecast is unavailable", () => {
-    render(<GnssView nowMs={NOW} result={down} />);
-    expect(screen.getByText(/Forecast unavailable/)).toBeTruthy();
+  it("says so when there is no forecast and the API stays down", async () => {
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 503 })));
+    render(wrap(<GnssView initial={null} />));
+    await waitFor(() => expect(screen.getByText(/Forecast unavailable/)).toBeTruthy(), { timeout: 4000 });
   });
 });

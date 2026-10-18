@@ -1,5 +1,9 @@
+"use client";
+
 import { Card, Empty } from "@/components/cards/card";
-import type { ApiResult, KpForecast } from "@/lib/api/client";
+import { useKpForecast } from "@/components/charts/use-kp-forecast";
+import { useNow } from "@/components/charts/use-now";
+import type { KpForecast } from "@/lib/api/client";
 import { AURORA_FLOOR_LAT, auroraLatitude, GNSS_ADVICE, gnssRisk } from "@/lib/aurora-gnss";
 import { EXPLAIN } from "@/lib/explanations";
 import { forecastIsOld } from "@/lib/forecast-age";
@@ -7,7 +11,7 @@ import { formatNum, formatUtc } from "@/lib/format";
 
 const HEAD = "py-1 pr-2 text-left text-xs font-semibold text-muted";
 
-type Props = { result: ApiResult<KpForecast>; nowMs: number };
+type Props = { initial: KpForecast | null };
 
 function Notice({ data, nowMs }: { data: KpForecast; nowMs: number }) {
   const old = forecastIsOld(data.issued_at, nowMs);
@@ -23,24 +27,32 @@ function Notice({ data, nowMs }: { data: KpForecast; nowMs: number }) {
   );
 }
 
-function Page({ title, intro, result, nowMs, children }: Props & { title: string; intro: string; children: (d: KpForecast) => React.ReactNode }) {
+function Page({ title, intro, initial, children }: Props & { title: string; intro: string; children: (d: KpForecast) => React.ReactNode }) {
+  const { data, isError, updatedAt } = useKpForecast(initial);
+  const nowMs = useNow();
+
   return (
     <div className="space-y-6">
       <header className="max-w-prose space-y-2">
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="text-base">{intro}</p>
       </header>
-      {result.ok ? (
+      {data ? (
         <>
-          <Notice data={result.data} nowMs={nowMs} />
-          {children(result.data)}
+          <Notice data={data} nowMs={nowMs} />
+          {children(data)}
           <p className="text-xs tabular-nums text-muted">
-            Issued {formatUtc(result.data.issued_at)}. Model {result.data.model_version}.
+            Issued {formatUtc(data.issued_at)}. Model {data.model_version}.
+            {nowMs > 0 && ` Refreshed ${formatUtc(new Date(updatedAt).toISOString())}.`}
           </p>
         </>
       ) : (
         <Card title="Forecast">
-          <Empty>Forecast unavailable. The API is not reachable or has not issued a forecast yet.</Empty>
+          <Empty>
+            {isError
+              ? "Forecast unavailable. The API is not reachable or has not issued a forecast yet."
+              : "Loading forecast…"}
+          </Empty>
         </Card>
       )}
     </div>
@@ -53,13 +65,12 @@ const lat = (kp: number) => {
   return v === null ? `Poleward of ${AURORA_FLOOR_LAT}°` : `about ${Math.round(v)}°`;
 };
 
-export function AuroraView({ result, nowMs }: Props) {
+export function AuroraView({ initial }: Props) {
   return (
     <Page
       title="Aurora"
       intro="How far towards the equator the aurora may be visible, from the Kp forecast. Latitudes are geomagnetic, which differs from the latitude on a map."
-      result={result}
-      nowMs={nowMs}
+      initial={initial}
     >
       {(d) => (
         <Card title="Where the aurora may reach" explain={EXPLAIN.aurora}>
@@ -94,13 +105,12 @@ export function AuroraView({ result, nowMs }: Props) {
   );
 }
 
-export function GnssView({ result, nowMs }: Props) {
+export function GnssView({ initial }: Props) {
   return (
     <Page
       title="GNSS"
       intro="How likely a geomagnetic storm is to degrade GPS and RTK accuracy, from the forecast storm level."
-      result={result}
-      nowMs={nowMs}
+      initial={initial}
     >
       {(d) => (
         <Card title="GNSS risk" explain={EXPLAIN.gnss}>
