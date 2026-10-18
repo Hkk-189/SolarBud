@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { StormTimeline } from "@/components/backtest/storm-timeline";
+import { StormTimeline, TimelineLegend } from "@/components/backtest/storm-timeline";
 import { BACKTESTS, KIND_LABEL } from "@/lib/backtests";
 import { formatUtc } from "@/lib/format";
 
@@ -14,10 +14,7 @@ export default function Backtest() {
           We replayed five major storms through the alert engine, hour by hour, using only data available at the time.
           The model never saw these storms in training, and the alert settings were chosen on other years.
         </p>
-        <p className="text-sm text-muted">
-          Shaded: the storm dates. Triangle: Warning. Filled circle: Active. Square: All clear. A Warning with no Active
-          after it is a false warning. Nothing was sent; these are dry runs.
-        </p>
+        <TimelineLegend />
       </header>
       {BACKTESTS.map((s) => (
         <section key={s.id} className="rounded-card border border-outline bg-card p-6">
