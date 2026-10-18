@@ -1,0 +1,141 @@
+import { Card, Empty } from "@/components/cards/card";
+import type { ApiResult, KpForecast } from "@/lib/api/client";
+import { AURORA_FLOOR_LAT, auroraLatitude, GNSS_ADVICE, gnssRisk } from "@/lib/aurora-gnss";
+import { EXPLAIN } from "@/lib/explanations";
+import { forecastIsOld } from "@/lib/forecast-age";
+import { formatNum, formatUtc } from "@/lib/format";
+
+const HEAD = "py-1 pr-2 text-left text-xs font-semibold text-muted";
+
+type Props = { result: ApiResult<KpForecast>; nowMs: number };
+
+function Notice({ data, nowMs }: { data: KpForecast; nowMs: number }) {
+  const old = forecastIsOld(data.issued_at, nowMs);
+
+  if (!old && !data.data_stale) return null;
+
+  return (
+    <p role="status" className="mb-3 rounded-md border border-outline bg-surface-soft px-3 py-2 text-sm font-semibold">
+      {old
+        ? "This forecast is older than 15 minutes, so it may be out of date."
+        : "L1 solar wind data is out of date, treat this forecast with caution."}
+    </p>
+  );
+}
+
+function Page({ title, intro, result, nowMs, children }: Props & { title: string; intro: string; children: (d: KpForecast) => React.ReactNode }) {
+  return (
+    <div className="space-y-6">
+      <header className="max-w-prose space-y-2">
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <p className="text-base">{intro}</p>
+      </header>
+      {result.ok ? (
+        <>
+          <Notice data={result.data} nowMs={nowMs} />
+          {children(result.data)}
+          <p className="text-xs tabular-nums text-muted">
+            Issued {formatUtc(result.data.issued_at)}. Model {result.data.model_version}.
+          </p>
+        </>
+      ) : (
+        <Card title="Forecast">
+          <Empty>Forecast unavailable. The API is not reachable or has not issued a forecast yet.</Empty>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+const lat = (kp: number) => {
+  const v = auroraLatitude(kp);
+
+  return v === null ? `Poleward of ${AURORA_FLOOR_LAT}°` : `about ${Math.round(v)}°`;
+};
+
+export function AuroraView({ result, nowMs }: Props) {
+  return (
+    <Page
+      title="Aurora"
+      intro="How far towards the equator the aurora may be visible, from the Kp forecast. Latitudes are geomagnetic, which differs from the latitude on a map."
+      result={result}
+      nowMs={nowMs}
+    >
+      {(d) => (
+        <Card title="Where the aurora may reach" explain={EXPLAIN.aurora}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className={HEAD}>Ahead</th>
+                <th className={HEAD}>Likely Kp</th>
+                <th className={HEAD}>Visible down to</th>
+                <th className={HEAD}>Could reach (high)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.horizons.map((h) => (
+                <tr key={h.horizon_h} className="border-t border-outline">
+                  <th scope="row" className="py-2 pr-2 text-left font-medium">
+                    +{h.horizon_h} h
+                  </th>
+                  <td className="py-2 pr-2 tabular-nums">{formatNum(h.p50, 1)}</td>
+                  <td className="py-2 pr-2">{lat(h.p50)}</td>
+                  <td className="py-2">{lat(h.p90)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 text-sm text-muted">
+            From India the aurora is visible only in extreme storms, such as the one seen from Ladakh in May 2024.
+          </p>
+        </Card>
+      )}
+    </Page>
+  );
+}
+
+export function GnssView({ result, nowMs }: Props) {
+  return (
+    <Page
+      title="GNSS"
+      intro="How likely a geomagnetic storm is to degrade GPS and RTK accuracy, from the forecast storm level."
+      result={result}
+      nowMs={nowMs}
+    >
+      {(d) => (
+        <Card title="GNSS risk" explain={EXPLAIN.gnss}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className={HEAD}>Ahead</th>
+                <th className={HEAD}>Risk</th>
+                <th className={HEAD}>Could reach (high)</th>
+                <th className={HEAD}>What to do</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.horizons.map((h) => {
+                const likely = gnssRisk(h.p50);
+
+                return (
+                  <tr key={h.horizon_h} className="border-t border-outline align-top">
+                    <th scope="row" className="py-2 pr-2 text-left font-medium">
+                      +{h.horizon_h} h
+                    </th>
+                    <td className="py-2 pr-2 font-semibold">{likely ?? "No data"}</td>
+                    <td className="py-2 pr-2">{gnssRisk(h.p90) ?? "No data"}</td>
+                    <td className="py-2 text-muted">{likely ? GNSS_ADVICE[likely] : ""}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="mt-3 text-sm text-muted">
+            This covers the next 6 hours only. It does not include the evening scintillation near the equator that
+            matters in India, which depends on local time, not only Kp.
+          </p>
+        </Card>
+      )}
+    </Page>
+  );
+}

@@ -3,7 +3,7 @@ export interface Explanation {
   details: string[];
 }
 
-export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpChart" | "solarWindCharts", Explanation> = {
+export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpChart" | "solarWindCharts" | "aurora" | "gnss", Explanation> = {
   stormLevel: {
     summary:
       "Where Earth's magnetic field is now and is forecast to be over the next 6 hours, on NOAA's scale from G0 (quiet) to G5 (extreme).",
@@ -41,6 +41,22 @@ export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpC
       "'now' marks when the forecast was issued. 'last forecast' means no new forecast has arrived for over 15 minutes.",
     ],
   },
+  aurora: {
+    summary: "The lower the latitude in the table, the further towards the equator the aurora may be seen.",
+    details: [
+      "Kp 5 puts the aurora's edge near 56° geomagnetic latitude, Kp 7 near 52° and Kp 9 near 47°. Between those values we interpolate.",
+      "Likely uses the middle forecast; Could reach uses the high end of the range, which a strong storm can exceed.",
+      "This is a rough rule from Kp alone. It is not an official forecast.",
+    ],
+  },
+  gnss: {
+    summary: "Risk is read from the forecast storm level: Low below G1, Moderate for G1 and G2, High for G3, Severe for G4 and G5.",
+    details: [
+      "Storms disturb the ionosphere, which can degrade GPS accuracy and RTK fixes.",
+      "Risk uses the likely Kp; Could reach uses the high end of the range.",
+      "This is a simple rule from the storm level, not a measurement of the ionosphere.",
+    ],
+  },
   solarWindCharts: {
     summary:
       "The last 24 hours of solar wind at L1. A sudden jump in speed, density and field strength often means a solar eruption (a CME) has arrived.",
@@ -52,19 +68,9 @@ export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpC
 };
 
 export const COMING_SOON: Record<
-  "aurora" | "gnss" | "cme",
+  "cme",
   { title: string; body: string; phase: string }
 > = {
-  aurora: {
-    title: "Aurora",
-    body: "When and where the aurora may be visible, based on the Kp forecast, with honest odds for low latitudes like India.",
-    phase: "Phase 4",
-  },
-  gnss: {
-    title: "GNSS",
-    body: "A Low, Moderate, High or Severe risk timeline for GPS and RTK work over the next 3 days, with plain advice.",
-    phase: "Phase 4",
-  },
   cme: {
     title: "CME tracker",
     body: "Solar eruptions (CMEs) heading towards Earth and when they are predicted to arrive.",
