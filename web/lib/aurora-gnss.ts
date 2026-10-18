@@ -27,7 +27,7 @@ export function auroraLatitude(kp: number): number | null {
   return l0 + ((kp - k0) / (k1 - k0)) * (l1 - l0);
 }
 
-export type GnssRisk = "Low" | "Moderate" | "High" | "Severe";
+type GnssRisk = "Low" | "Moderate" | "High" | "Severe";
 
 // docs/context.md "GNSS risk mapping (v1 heuristic)": < G1 Low, G1-G2 Moderate, G3 High, G4-G5 Severe.
 const RISK_BY_G: GnssRisk[] = ["Low", "Moderate", "Moderate", "High", "Severe", "Severe"];

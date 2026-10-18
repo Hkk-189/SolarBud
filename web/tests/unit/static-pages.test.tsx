@@ -16,7 +16,7 @@ describe("Models", () => {
     const table = screen.getByRole("table", { name: /scores on held-out data/i });
     expect(within(table).getAllByRole("row")).toHaveLength(1 + 9);
     expect(within(table).getByText("+0.250")).toBeTruthy();
-    expect(screen.getByText(/and 5% at \+6 h/)).toBeTruthy();
+    expect(screen.getByText(/only 33% of the time at \+3 h and 5% at \+6 h/)).toBeTruthy();
   });
 });
 

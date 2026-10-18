@@ -93,7 +93,6 @@
   --radius-input: 6px;
   --radius-card: 10px;
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 body {

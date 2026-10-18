@@ -1,6 +1,6 @@
 // Test-split scores from docs/model-cards/stage2-lgbm.md (`make evaluate`): the five held-out storms
 // plus 2025 onward. Regenerate this table whenever the model card changes.
-export type ModelId = "persistence" | "newell-kp" | "lgbm-p50";
+type ModelId = "persistence" | "newell-kp" | "lgbm-p50";
 
 export const MODEL_LABEL: Record<ModelId, string> = {
   persistence: "Persistence (next value = last value)",
@@ -8,7 +8,7 @@ export const MODEL_LABEL: Record<ModelId, string> = {
   "lgbm-p50": "SolarBud (LightGBM, likely value)",
 };
 
-export interface ScoreRow {
+interface ScoreRow {
   horizon: 1 | 3 | 6;
   model: ModelId;
   rmse: number;
