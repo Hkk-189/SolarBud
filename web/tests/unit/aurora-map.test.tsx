@@ -28,3 +28,18 @@ it("says the map is unavailable when the outline cannot be loaded", async () => 
   await waitFor(() => expect(screen.getByText(/Map unavailable/)).toBeTruthy());
   expect(screen.queryByTestId("map")).toBeNull();
 });
+
+it("does not describe lines that are not drawn when the aurora stays below Kp 5", async () => {
+  vi.stubGlobal("fetch", () => Promise.resolve(Response.json(land)));
+  render(<AuroraMap likelyKp={3} highKp={4} marker={null} Chart={FakeChart} />);
+  await waitFor(() => expect(screen.getByTestId("map")).toBeTruthy());
+  expect(screen.queryByText(/solid line/)).toBeNull();
+  expect(screen.getByText(/stays poleward of 56° geomagnetic latitude/)).toBeTruthy();
+});
+
+it("tells a screen reader that the aurora stays poleward but could reach a latitude", async () => {
+  vi.stubGlobal("fetch", () => Promise.resolve(Response.json(land)));
+  render(<AuroraMap likelyKp={3} highKp={6} marker={null} Chart={FakeChart} />);
+  await waitFor(() => expect(screen.getByTestId("map")).toBeTruthy());
+  expect(screen.getByTestId("map").getAttribute("aria-label")).toMatch(/stays poleward of 56°.*could reach about 54°/);
+});

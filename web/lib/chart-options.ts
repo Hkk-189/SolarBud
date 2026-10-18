@@ -205,6 +205,16 @@ interface VerificationInput {
  */
 export function verificationOption({ points, utc, colors }: VerificationInput) {
   const mid = (p: VerificationPoint) => Date.parse(p.bin_start) + BIN_MS / 2;
+
+  // A null between bins that are more than one bin apart makes the line break where no forecast was issued.
+  const gapped = (value: (p: VerificationPoint) => number): Point[] =>
+    points.flatMap((p, i) => {
+      const prev = points[i - 1];
+      const gap: Point[] = prev !== undefined && Date.parse(p.bin_start) - Date.parse(prev.bin_start) > BIN_MS ? [[mid(prev) + BIN_MS, null]] : [];
+
+      return [...gap, [mid(p), value(p)]];
+    });
+
   const hidden = { opacity: 0 };
   const noTooltip = { show: false } as const;
 
@@ -215,7 +225,7 @@ export function verificationOption({ points, utc, colors }: VerificationInput) {
       showSymbol: false,
       lineStyle: hidden,
       tooltip: noTooltip,
-      data: points.map((p) => [mid(p), p.p10]),
+      data: gapped((p) => p.p10),
     },
     {
       type: "line",
@@ -224,7 +234,7 @@ export function verificationOption({ points, utc, colors }: VerificationInput) {
       lineStyle: hidden,
       tooltip: noTooltip,
       areaStyle: { color: colors.band, opacity: 0.6 },
-      data: points.map((p) => [mid(p), p.p90 - p.p10]),
+      data: gapped((p) => p.p90 - p.p10),
     },
     {
       type: "line",
@@ -232,7 +242,7 @@ export function verificationOption({ points, utc, colors }: VerificationInput) {
       showSymbol: true,
       lineStyle: { color: colors.line, width: 2 },
       itemStyle: { color: colors.line },
-      data: points.map((p) => [mid(p), round1(p.p50)]),
+      data: gapped((p) => round1(p.p50)),
       markLine: {
         silent: true,
         symbol: "none",

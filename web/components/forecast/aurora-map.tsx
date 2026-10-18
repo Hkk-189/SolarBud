@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { EChart } from "@/components/charts/echart";
 import { useChartColors } from "@/components/charts/use-chart-colors";
-import { auroraLatitude } from "@/lib/aurora-gnss";
-import { auroraMapOption, type MapMarker } from "@/lib/aurora-map-option";
+import { AURORA_FLOOR_LAT, auroraLatitude } from "@/lib/aurora-gnss";
+import { auroraMapOption, auroraRings, type MapMarker } from "@/lib/aurora-map-option";
 
 const GEOJSON = "/geo/world-land-110m.json";
 
@@ -20,7 +20,11 @@ function summary(likelyKp: number, highKp: number): string {
 
   if (likely === null && high === null) return "Map of the world: the aurora stays poleward of 56° geomagnetic latitude.";
 
-  return `Map of the world: the aurora may be seen down to about ${likely ?? "56° or less"} geomagnetic latitude, and could reach ${high ?? likely}.`;
+  if (likely === null) {
+    return `Map of the world: the aurora stays poleward of 56° geomagnetic latitude, and could reach about ${high} geomagnetic latitude.`;
+  }
+
+  return `Map of the world: the aurora may be seen down to about ${likely} geomagnetic latitude, and could reach ${high ?? likely}.`;
 }
 
 /** World map of the aurora's equatorward edge. The land outline loads once; if it fails the tables carry the same facts. */
@@ -70,12 +74,15 @@ export function AuroraMap({
 
   if (state === "loading") return <div className="h-72 w-full md:h-96" aria-hidden="true" />;
 
+  const hasLines = auroraRings(likelyKp, highKp).length > 0;
+
   return (
     <>
       <Chart option={option} label={summary(likelyKp, highKp)} heightClass="h-72 md:h-96" />
       <p className="mt-2 text-xs text-muted">
-        The aurora may be seen on the pole side of the solid line. The dashed line is how far it could reach. Lines
-        are drawn from geomagnetic latitude, so they do not follow the map&apos;s latitudes.
+        {hasLines
+          ? "The aurora may be seen on the pole side of the solid line. The dashed line is how far it could reach. Lines are drawn from geomagnetic latitude, so they do not follow the map's latitudes."
+          : `The aurora stays poleward of ${AURORA_FLOOR_LAT}° geomagnetic latitude, so there is no line to draw at this Kp.`}
       </p>
     </>
   );

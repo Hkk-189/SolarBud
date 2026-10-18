@@ -46,7 +46,7 @@ export const EXPLAIN: Record<"stormLevel" | "kpForecast" | "solarWindNow" | "kpC
     details: [
       "Kp 5 puts the aurora's edge near 56° geomagnetic latitude, Kp 7 near 52° and Kp 9 near 47°. Between those values we interpolate.",
       "Likely uses the middle forecast; Could reach uses the high end of the range, which a strong storm can exceed.",
-      "The map draws that edge across the world. It is tilted because geomagnetic latitude is measured from the magnetic pole (about 80.9°N, 72.8°W), not the geographic one.",
+      "The map draws that edge across the world. It is tilted because geomagnetic latitude is measured from the geomagnetic pole (about 80.9°N, 72.8°W), not the geographic one.",
       "This is a rough rule from Kp alone. It is not an official forecast.",
     ],
   },

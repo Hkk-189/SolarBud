@@ -51,6 +51,15 @@ describe("verificationOption", () => {
   });
 });
 
+describe("verificationOption gaps", () => {
+  it("breaks the band and the median where bins are missing instead of drawing across them", () => {
+    const o = verificationOption({ points: [pt(6, 2, 3, 4, 3), pt(15, 2, 3, 4, 3)], utc: true, colors: COLORS });
+
+    for (const i of [0, 1, 2]) expect(o.series[i]!.data.some((d) => Array.isArray(d) && d[1] === null)).toBe(true);
+    expect(o.series[0]!.data).toHaveLength(3);
+  });
+});
+
 describe("VerificationChart", () => {
   const media = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
   const FakeChart = () => <div data-testid="chart" />;

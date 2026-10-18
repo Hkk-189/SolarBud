@@ -24,10 +24,29 @@ it("says Delhi is not in reach even at Kp 9", () => {
   expect(screen.getByText(/Could reach: not in reach/)).toBeTruthy();
 });
 
-it("says not in reach for everywhere when the forecast is below Kp 5", () => {
-  render(<MyLocation likelyKp={3} highKp={4.5} onChange={vi.fn()} />);
+it("below Kp 5 says it cannot say for a place poleward of 56 degrees, and not in reach for one equatorward of it", () => {
+  const { unmount } = render(<MyLocation likelyKp={3} highKp={4.5} onChange={vi.fn()} />);
+
   pick("Tromsø");
+  expect(screen.getByText(/Likely: can't say below Kp 5/)).toBeTruthy();
+  unmount();
+  render(<MyLocation likelyKp={3} highKp={4.5} onChange={vi.fn()} />);
+  pick("Delhi");
   expect(screen.getByText(/Likely: not in reach/)).toBeTruthy();
+});
+
+it("announces the result politely and links the error to its field", () => {
+  const { container } = render(<MyLocation likelyKp={7} highKp={8} onChange={vi.fn()} />);
+
+  expect(container.querySelector('[aria-live="polite"]')).not.toBeNull();
+  pick("custom");
+  fireEvent.change(screen.getByLabelText(/Latitude/), { target: { value: "95" } });
+  fireEvent.change(screen.getByLabelText(/Longitude/), { target: { value: "10" } });
+
+  const lat = screen.getByLabelText(/Latitude/);
+
+  expect(lat.getAttribute("aria-invalid")).toBe("true");
+  expect(document.getElementById(lat.getAttribute("aria-describedby") ?? "")?.textContent).toMatch(/Latitude must be/);
 });
 
 it("shows an inline error and no result for a latitude out of range", () => {
