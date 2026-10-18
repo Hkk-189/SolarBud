@@ -1,4 +1,5 @@
 import type { KpForecast, KpPoint } from "@/lib/api/client";
+import { HowToRead } from "@/components/cards/how-to-read";
 import { kpRuler, type RulerLane } from "@/lib/kp-ruler";
 
 const pct = (kp: number) => `${(kp / 9) * 100}%`;
@@ -61,6 +62,25 @@ function Lane({ lane }: { lane: RulerLane }) {
   );
 }
 
+function RulerLegend() {
+  return (
+    <HowToRead>
+      <p className="flex items-center gap-2">
+        <span aria-hidden="true" className="inline-block size-3.5 shrink-0 rounded-full bg-foreground" />
+        <span>Likely Kp: our best single estimate for that time.</span>
+      </p>
+      <p className="flex items-center gap-2">
+        <span aria-hidden="true" className="relative inline-block h-3.5 w-8 shrink-0 border-x-[3px] border-uncertainty">
+          <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 bg-uncertainty" />
+        </span>
+        <span>Likely range, from Low to High: the real value falls inside it about 8 times out of 10.</span>
+      </p>
+      <p>Now is the latest measured Kp. In 1, 3 and 6 h are forecasts from the time shown on the Kp forecast card.</p>
+      <p>The coloured strip is NOAA&apos;s storm scale, G0 (quiet) to G5 (extreme). A storm starts at G1, which is Kp 5- (about 4.7).</p>
+    </HowToRead>
+  );
+}
+
 export function StormRuler({
   forecast,
   observed,
@@ -74,6 +94,7 @@ export function StormRuler({
   const label = `Kp scale from 0 to 9 with NOAA storm bands G0 to G5. ${lanes.map((l) => l.text).join(". ")}.${issuedNote ? ` ${issuedNote}` : ""}`;
 
   return (
+    <div className="w-full">
     <div role="img" aria-label={label} className="w-full">
       <div aria-hidden="true">
         <div className={ROW}>
@@ -118,6 +139,8 @@ export function StormRuler({
         </div>
         {issuedNote && <p className="mt-2 text-sm text-muted">{issuedNote}</p>}
       </div>
+    </div>
+    <RulerLegend />
     </div>
   );
 }
