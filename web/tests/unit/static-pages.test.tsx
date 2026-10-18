@@ -1,21 +1,33 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ApiDocs, { metadata as apiMeta } from "@/app/api-docs/page";
 import Backtest, { metadata as backtestMeta } from "@/app/backtest/page";
 import Models, { metadata as modelsMeta } from "@/app/models/page";
 import { StormTimeline, timelineX } from "@/components/backtest/storm-timeline";
 import { BACKTESTS } from "@/lib/backtests";
 
-afterEach(cleanup);
+const media = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => media); // jsdom has no matchMedia
+  vi.stubGlobal("fetch", () => Promise.resolve(Response.json([]))); // the API returns no comparison points
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("Models", () => {
-  it("has one h1, a score table, and the Kp 7 caveat", () => {
-    render(<Models />);
+  it("has one h1, a score table, the comparison panel and the Kp 7 caveat", async () => {
+    render(<QueryClientProvider client={new QueryClient()}>{await Models()}</QueryClientProvider>);
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(modelsMeta.title).toBe("Models");
     const table = screen.getByRole("table", { name: /scores on held-out data/i });
     expect(within(table).getAllByRole("row")).toHaveLength(1 + 9);
     expect(within(table).getByText("+0.250")).toBeTruthy();
+    expect(screen.getByText("No completed 3-hour periods yet.")).toBeTruthy();
     expect(screen.getByText(/only 33% of the time at \+3 h and 5% at \+6 h/)).toBeTruthy();
   });
 });

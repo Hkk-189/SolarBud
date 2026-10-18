@@ -1,6 +1,7 @@
 import { cleanup, render, within } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { Explainer } from "@/components/cards/explainer";
+import { EXPLAIN } from "@/lib/explanations";
 
 afterEach(cleanup);
 
@@ -27,4 +28,11 @@ it("shows an open/closed chevron that screen readers skip", () => {
   expect(chevron).not.toBeNull();
   expect(summary?.textContent).toContain("What does this mean?");
   expect(within(container).getByText("What does this mean?").tagName).toBe("SUMMARY");
+});
+
+it("names the geomagnetic pole, not the magnetic dip pole, in the aurora explainer", () => {
+  const text = EXPLAIN.aurora.details.join(" ");
+
+  expect(text).toMatch(/geomagnetic pole/);
+  expect(text).not.toMatch(/(?<!geo)magnetic pole/);
 });

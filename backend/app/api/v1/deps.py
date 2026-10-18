@@ -1,6 +1,7 @@
 """Data access as overridable dependencies: each returns an async callable (tests override)."""
 
-from datetime import datetime
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -26,6 +27,26 @@ def latest_forecast():
         }
 
     return get
+
+
+def forecast_range():
+    async def get(start: datetime, end: datetime) -> list[dict]:
+        async with SessionLocal() as s:
+            rows = (
+                await s.execute(
+                    select(Forecast)
+                    .where(Forecast.issued_at >= start, Forecast.issued_at <= end)
+                    .order_by(Forecast.issued_at)
+                )
+            ).scalars()
+            return [{"issued_at": r.issued_at, "horizons": r.horizons} for r in rows]
+
+    return get
+
+
+def utc_now() -> Callable[[], datetime]:
+    """The clock, as a dependency so tests can fix it."""
+    return lambda: datetime.now(UTC)
 
 
 def solar_wind_range():

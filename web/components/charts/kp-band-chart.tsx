@@ -1,32 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { Card, Empty } from "@/components/cards/card";
 import { EChart } from "./echart";
 import { TimeZoneToggle, useTimeZone } from "./time-zone";
-import { REFRESH_MS, useChartColors } from "./use-chart-colors";
+import { useChartColors } from "./use-chart-colors";
+import { useKpForecast, useKpObserved } from "./use-kp-forecast";
 import { useNow } from "./use-now";
 import type { KpForecast, KpPoint } from "@/lib/api/client";
 import { bandOption } from "@/lib/chart-options";
 import { EXPLAIN } from "@/lib/explanations";
 import { forecastIsOld } from "@/lib/forecast-age";
-
-async function fetchForecast(): Promise<KpForecast> {
-  const res = await fetch("/api/kp-forecast");
-
-  if (!res.ok) throw new Error(`kp forecast ${res.status}`);
-
-  return res.json();
-}
-
-async function fetchObserved(): Promise<KpPoint[]> {
-  const res = await fetch("/api/kp-observed");
-
-  if (!res.ok) throw new Error(`kp observed ${res.status}`);
-
-  return res.json();
-}
 
 interface Props {
   initial: KpForecast | null;
@@ -41,23 +25,9 @@ export function KpBandChart({ initial, initialObserved, Chart = EChart }: Props)
   const colors = useChartColors();
   const nowMs = useNow();
 
-  const { data, isError } = useQuery({
-    queryKey: ["kp-forecast"],
-    queryFn: fetchForecast,
-    refetchInterval: REFRESH_MS,
-    staleTime: 60_000,
-    retry: 1,
-    initialData: initial ?? undefined,
-  });
+  const { data, isError } = useKpForecast(initial);
 
-  const { data: observed } = useQuery({
-    queryKey: ["kp-observed"],
-    queryFn: fetchObserved,
-    refetchInterval: REFRESH_MS,
-    staleTime: 60_000,
-    retry: 1,
-    initialData: initialObserved ?? undefined,
-  });
+  const { data: observed } = useKpObserved(initialObserved);
 
   const old = data ? forecastIsOld(data.issued_at, nowMs) : false;
 

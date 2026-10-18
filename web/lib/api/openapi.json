@@ -292,6 +292,50 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VerificationPoint": {
+        "properties": {
+          "bin_start": {
+            "title": "Bin Start",
+            "type": "string"
+          },
+          "issued_at": {
+            "title": "Issued At",
+            "type": "string"
+          },
+          "observed_kp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Kp"
+          },
+          "p10": {
+            "title": "P10",
+            "type": "number"
+          },
+          "p50": {
+            "title": "P50",
+            "type": "number"
+          },
+          "p90": {
+            "title": "P90",
+            "type": "number"
+          }
+        },
+        "required": [
+          "bin_start",
+          "issued_at",
+          "p10",
+          "p50",
+          "p90"
+        ],
+        "title": "VerificationPoint",
+        "type": "object"
       }
     }
   },
@@ -358,6 +402,66 @@
           }
         },
         "summary": "Kp Forecast",
+        "tags": [
+          "forecast"
+        ]
+      }
+    },
+    "/v1/forecast/verification": {
+      "get": {
+        "description": "How past forecasts compare with the Kp observed afterwards, over completed 3 h bins only.",
+        "operationId": "verification_v1_forecast_verification_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "horizon",
+            "required": false,
+            "schema": {
+              "default": 3,
+              "title": "Horizon",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hours",
+            "required": false,
+            "schema": {
+              "default": 48,
+              "maximum": 168,
+              "minimum": 1,
+              "title": "Hours",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VerificationPoint"
+                  },
+                  "title": "Response Verification V1 Forecast Verification Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verification",
         "tags": [
           "forecast"
         ]

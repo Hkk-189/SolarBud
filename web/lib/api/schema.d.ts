@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/forecast/verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verification
+         * @description How past forecasts compare with the Kp observed afterwards, over completed 3 h bins only.
+         */
+        get: operations["verification_v1_forecast_verification_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/kp": {
         parameters: {
             query?: never;
@@ -198,6 +218,21 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** VerificationPoint */
+        VerificationPoint: {
+            /** Bin Start */
+            bin_start: string;
+            /** Issued At */
+            issued_at: string;
+            /** Observed Kp */
+            observed_kp?: number | null;
+            /** P10 */
+            p10: number;
+            /** P50 */
+            p50: number;
+            /** P90 */
+            p90: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -265,6 +300,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KpForecast"];
+                };
+            };
+        };
+    };
+    verification_v1_forecast_verification_get: {
+        parameters: {
+            query?: {
+                horizon?: number;
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationPoint"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
