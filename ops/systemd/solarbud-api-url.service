@@ -1,0 +1,12 @@
+[Unit]
+Description=Point Vercel at the SolarBud tunnel's current URL
+After=solarbud-tunnel.service
+PartOf=solarbud-tunnel.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 %h/code/SolarBud/ops/update_api_url.py
+
+[Install]
+WantedBy=solarbud-tunnel.service
