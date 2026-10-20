@@ -5,7 +5,7 @@ import { Card, Empty } from "@/components/cards/card";
 import { EChart } from "./echart";
 import { TimeZoneToggle, useTimeZone } from "./time-zone";
 import { useChartColors } from "./use-chart-colors";
-import { useKpForecast, useKpObserved } from "./use-kp-forecast";
+import { useLive } from "./use-live";
 import { useNow } from "./use-now";
 import type { KpForecast, KpPoint } from "@/lib/api/client";
 import { bandOption } from "@/lib/chart-options";
@@ -25,9 +25,9 @@ export function KpBandChart({ initial, initialObserved, Chart = EChart }: Props)
   const colors = useChartColors();
   const nowMs = useNow();
 
-  const { data, isError } = useKpForecast(initial);
+  const { data, isError } = useLive<KpForecast>("kp-forecast", "/api/kp-forecast", initial);
 
-  const { data: observed } = useKpObserved(initialObserved);
+  const { data: observed } = useLive<KpPoint[]>("kp-observed", "/api/kp-observed", initialObserved);
 
   const old = data ? forecastIsOld(data.issued_at, nowMs) : false;
 

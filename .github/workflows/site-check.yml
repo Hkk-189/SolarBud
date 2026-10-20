@@ -1,0 +1,13 @@
+name: site-check
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  forecast-is-fresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 ops/check_site.py https://solarbud-hkk-189s-projects.vercel.app

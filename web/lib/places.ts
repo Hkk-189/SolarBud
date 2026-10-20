@@ -21,8 +21,6 @@ export interface PlaceResult {
   error: string | null;
 }
 
-const number = (text: string) => (text.trim() === "" ? Number.NaN : Number(text));
-
 /** A listed place, or a custom one from two text fields. Empty means "nothing chosen yet", not an error. */
 export function resolvePlace(choice: string, latText: string, lonText: string): PlaceResult {
   if (choice === "") return { place: null, error: null };
@@ -33,8 +31,8 @@ export function resolvePlace(choice: string, latText: string, lonText: string): 
 
   if (latText.trim() === "" || lonText.trim() === "") return { place: null, error: null };
 
-  const lat = number(latText);
-  const lon = number(lonText);
+  const lat = Number(latText);
+  const lon = Number(lonText);
 
   if (!(Math.abs(lat) <= 90)) return { place: null, error: "Latitude must be a number from -90 to 90." };
 

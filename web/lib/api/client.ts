@@ -34,6 +34,15 @@ async function get<T>(path: string): Promise<ApiResult<T>> {
   }
 }
 
+/** A same-origin route handler for a getter: data on success, 503 otherwise. The API origin never reaches the browser. */
+export const proxy =
+  <T>(get: () => Promise<ApiResult<T>>) =>
+  async () => {
+    const r = await get();
+
+    return r.ok ? Response.json(r.data) : Response.json({ error: "unavailable" }, { status: 503 });
+  };
+
 export const getKpForecast = () => get<KpForecast>("/v1/forecast/kp");
 
 export const getVerification = () => get<VerificationPoint[]>("/v1/forecast/verification?horizon=3&hours=48");

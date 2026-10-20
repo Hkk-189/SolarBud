@@ -1,0 +1,17 @@
+[Unit]
+Description=Point Vercel at the SolarBud tunnel's current URL
+After=solarbud-tunnel.service
+PartOf=solarbud-tunnel.service
+# A failed run (a Vercel blip, the API slow at boot) must not wait for the next tunnel restart.
+StartLimitIntervalSec=1h
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=2min
+ExecStart=/usr/bin/python3 %h/code/SolarBud/ops/update_api_url.py
+
+[Install]
+WantedBy=solarbud-tunnel.service

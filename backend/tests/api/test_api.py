@@ -142,3 +142,30 @@ def test_verification_rejects_a_bad_horizon_or_window():
     assert (
         c.get("/v1/forecast/verification", params={"horizon": 6, "hours": 168}).status_code == 200
     )
+
+
+def test_verification_window_edge_keeps_the_first_bin_and_drops_the_one_before_it():
+    app = create_app()
+    now = datetime(2024, 5, 10, 22, 0, tzinfo=UTC)  # hours=48 -> first bin starts 2024-05-08 21:00
+    issued = [
+        {
+            "issued_at": datetime(2024, 5, 8, 18, 0, tzinfo=UTC),
+            "horizons": FC["horizons"],
+        },  # 18:00 + 3 h -> 21:00 bin
+        {
+            "issued_at": datetime(2024, 5, 8, 17, 55, tzinfo=UTC),
+            "horizons": FC["horizons"],
+        },  # 17:55 + 3 h -> 18:00 bin
+    ]
+
+    async def forecasts(start, end):
+        return issued
+
+    async def kp(start, end):
+        return []
+
+    app.dependency_overrides[deps.forecast_range] = lambda: forecasts
+    app.dependency_overrides[deps.kp_range] = lambda: kp
+    app.dependency_overrides[deps.utc_now] = lambda: lambda: now
+    r = TestClient(app).get("/v1/forecast/verification").json()
+    assert [p["bin_start"] for p in r] == ["2024-05-08T21:00:00Z"]

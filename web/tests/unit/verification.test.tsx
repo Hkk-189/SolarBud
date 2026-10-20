@@ -77,6 +77,11 @@ describe("VerificationChart", () => {
     expect(screen.getByText("2 of 3 observed values fell inside the likely range.")).toBeTruthy();
     expect(screen.getByTestId("chart")).toBeTruthy();
   });
+  it("tells an empty window (no forecasts issued, e.g. the worker was off) from one with nothing observed yet", () => {
+    render(wrap(<VerificationChart initial={[]} Chart={FakeChart} />));
+    expect(screen.getByText("No forecasts issued in the last 48 hours.")).toBeTruthy();
+    expect(screen.queryByText(/No completed 3-hour periods/)).toBeNull();
+  });
   it("says there is nothing to compare yet instead of 0 of 0", () => {
     render(wrap(<VerificationChart initial={[pt(6, 1, 2, 3, null)]} Chart={FakeChart} />));
     expect(screen.getByText("No completed 3-hour periods yet.")).toBeTruthy();
