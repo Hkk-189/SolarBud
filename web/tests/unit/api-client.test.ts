@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getAlertCurrent, getKpForecast, getKpObserved, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
+import {
+  getAlertCurrent,
+  getKpForecast,
+  getKpObserved,
+  getSolarWindLatest,
+  getSolarWindWindow,
+  proxy,
+} from "@/lib/api/client";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -60,5 +67,20 @@ describe("solar wind window", () => {
     expect(u.pathname).toBe("/v1/kp");
     const span = Date.parse(u.searchParams.get("end")!) - Date.parse(u.searchParams.get("start")!);
     expect(span).toBe(27 * 3600 * 1000);
+  });
+});
+
+describe("proxy", () => {
+  it("answers 200 with the data when the API result is ok", async () => {
+    const res = await proxy(() => Promise.resolve({ ok: true, data: { a: 1 } } as const))();
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ a: 1 });
+  });
+  it("answers 503 with an error body when it is not, so the browser never sees the API origin", async () => {
+    const res = await proxy(() => Promise.resolve({ ok: false } as const))();
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "unavailable" });
   });
 });

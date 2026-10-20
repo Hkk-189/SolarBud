@@ -1,6 +1,6 @@
 "use client";
 
-import { useAlertCurrent, useKpForecast, useKpObserved } from "@/components/charts/use-kp-forecast";
+import { useLive } from "@/components/charts/use-live";
 import { useNow } from "@/components/charts/use-now";
 import { StormHero } from "@/components/home/storm-hero";
 import type { AlertStatus, ApiResult, KpForecast, KpPoint } from "@/lib/api/client";
@@ -21,9 +21,9 @@ export function LiveStormHero({
   /** The server's clock, used until the browser clock is available so the first paint matches the server render. */
   serverNowMs: number;
 }) {
-  const kp = useKpForecast(forecast.ok ? forecast.data : null);
-  const { data: alertData } = useAlertCurrent(alert.ok ? alert.data : null);
-  const { data: observedData } = useKpObserved(observed.ok ? observed.data : null);
+  const kp = useLive<KpForecast>("kp-forecast", "/api/kp-forecast", forecast.ok ? forecast.data : null);
+  const { data: alertData } = useLive<AlertStatus>("alert-current", "/api/alert-current", alert.ok ? alert.data : null);
+  const { data: observedData } = useLive<KpPoint[]>("kp-observed", "/api/kp-observed", observed.ok ? observed.data : null);
   const clock = useNow();
 
   return (

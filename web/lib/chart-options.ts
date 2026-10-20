@@ -261,7 +261,7 @@ export function verificationOption({ points, utc, colors }: VerificationInput) {
       showSymbol: false,
       lineStyle: { color: colors.text, width: 2 },
       itemStyle: { color: colors.text },
-      data: observedSteps(points.flatMap((p) => (p.observed_kp === null ? [] : [{ time: p.bin_start, kp: p.observed_kp }]))),
+      data: observedSteps(points.flatMap((p) => (p.observed_kp == null ? [] : [{ time: p.bin_start, kp: p.observed_kp }]))),
     },
   ];
 

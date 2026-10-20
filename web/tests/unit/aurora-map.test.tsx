@@ -43,3 +43,9 @@ it("tells a screen reader that the aurora stays poleward but could reach a latit
   await waitFor(() => expect(screen.getByTestId("map")).toBeTruthy(), { timeout: 5000 });
   expect(screen.getByTestId("map").getAttribute("aria-label")).toMatch(/stays poleward of 56°.*could reach about 54°/);
 });
+
+it("shows a visible loading line, not a blank box, while the outline is still loading", () => {
+  vi.stubGlobal("fetch", () => new Promise<Response>(() => undefined)); // never answers
+  render(<AuroraMap likelyKp={6} highKp={7} marker={null} Chart={FakeChart} />);
+  expect(screen.getByText("Loading map…")).toBeTruthy();
+});

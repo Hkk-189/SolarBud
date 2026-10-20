@@ -1,11 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { Card, Empty } from "@/components/cards/card";
 import { EChart } from "./echart";
 import { TimeZoneToggle, useTimeZone } from "./time-zone";
-import { REFRESH_MS, useChartColors } from "./use-chart-colors";
+import { useChartColors } from "./use-chart-colors";
+import { useLive } from "./use-live";
 import type { SolarWindPoint } from "@/lib/api/client";
 import { EXPLAIN } from "@/lib/explanations";
 import { type WindField, lineOption } from "@/lib/chart-options";
@@ -17,14 +17,6 @@ const SERIES: { field: WindField; label: string; unit: string }[] = [
   { field: "bt_nt", label: "Bt", unit: "nT" },
 ];
 
-async function fetchWindow(): Promise<SolarWindPoint[]> {
-  const res = await fetch("/api/solar-wind");
-
-  if (!res.ok) throw new Error(`solar wind ${res.status}`);
-
-  return res.json();
-}
-
 interface Props {
   initial: SolarWindPoint[] | null;
   /** The canvas renderer; tests pass a stand-in because jsdom has no canvas. */
@@ -35,14 +27,7 @@ export function SolarWindCharts({ initial, Chart = EChart }: Props) {
   const { utc } = useTimeZone();
   const colors = useChartColors();
 
-  const { data, isError } = useQuery({
-    queryKey: ["solar-wind-24h"],
-    queryFn: fetchWindow,
-    refetchInterval: REFRESH_MS,
-    staleTime: 60_000,
-    retry: 1,
-    initialData: initial ?? undefined,
-  });
+  const { data, isError } = useLive<SolarWindPoint[]>("solar-wind-24h", "/api/solar-wind", initial);
 
   const options = useMemo(
     () =>

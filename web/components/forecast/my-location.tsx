@@ -44,52 +44,38 @@ export function MyLocation({
     onChange(resolvePlace(c, la, lo).place);
   };
 
+  const fields = [
+    { name: "Latitude", range: "-90 to 90", value: lat, set: (v: string) => update({ lat: v }) },
+    { name: "Longitude", range: "-180 to 180", value: lon, set: (v: string) => update({ lon: v }) },
+  ];
+
   return (
     <div className="mt-4 space-y-2 border-t border-outline pt-4">
       <h3 className="text-sm font-semibold">Check a place</h3>
       <div className="flex flex-wrap items-center gap-2">
-        <label className="text-sm">
-          <span className="sr-only">Place</span>
-          <select aria-label="Place" className={FIELD} value={choice} onChange={(e) => update({ choice: e.target.value })}>
-            <option value="">Choose a place</option>
-            {PLACES.map((p) => (
-              <option key={p.name} value={p.name}>
-                {p.name}
-              </option>
-            ))}
-            <option value="custom">Other (latitude and longitude)</option>
-          </select>
-        </label>
-        {choice === "custom" && (
-          <>
-            <label className="text-sm">
-              <span className="sr-only">Latitude (-90 to 90)</span>
-              <input
-                aria-label="Latitude (-90 to 90)"
-                className={`${FIELD} w-32`}
-                inputMode="decimal"
-                aria-invalid={error?.startsWith("Latitude") ? true : undefined}
-                aria-describedby={error?.startsWith("Latitude") ? "place-error" : undefined}
-                placeholder="Latitude"
-                value={lat}
-                onChange={(e) => update({ lat: e.target.value })}
-              />
-            </label>
-            <label className="text-sm">
-              <span className="sr-only">Longitude (-180 to 180)</span>
-              <input
-                aria-label="Longitude (-180 to 180)"
-                className={`${FIELD} w-32`}
-                inputMode="decimal"
-                aria-invalid={error?.startsWith("Longitude") ? true : undefined}
-                aria-describedby={error?.startsWith("Longitude") ? "place-error" : undefined}
-                placeholder="Longitude"
-                value={lon}
-                onChange={(e) => update({ lon: e.target.value })}
-              />
-            </label>
-          </>
-        )}
+        <select aria-label="Place" className={FIELD} value={choice} onChange={(e) => update({ choice: e.target.value })}>
+          <option value="">Choose a place</option>
+          {PLACES.map((p) => (
+            <option key={p.name} value={p.name}>
+              {p.name}
+            </option>
+          ))}
+          <option value="custom">Other (latitude and longitude)</option>
+        </select>
+        {choice === "custom" &&
+          fields.map((f) => (
+            <input
+              key={f.name}
+              aria-label={`${f.name} (${f.range})`}
+              className={`${FIELD} w-32`}
+              inputMode="decimal"
+              aria-invalid={error?.startsWith(f.name) ? true : undefined}
+              aria-describedby={error?.startsWith(f.name) ? "place-error" : undefined}
+              placeholder={f.name}
+              value={f.value}
+              onChange={(e) => f.set(e.target.value)}
+            />
+          ))}
       </div>
       <div aria-live="polite">
         {error && (

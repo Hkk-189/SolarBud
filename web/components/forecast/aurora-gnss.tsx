@@ -2,13 +2,13 @@
 
 import { Card, Empty } from "@/components/cards/card";
 import { useState } from "react";
-import { useKpForecast } from "@/components/charts/use-kp-forecast";
+import { useLive } from "@/components/charts/use-live";
 import { useNow } from "@/components/charts/use-now";
 import { AuroraMap } from "@/components/forecast/aurora-map";
 import { MyLocation } from "@/components/forecast/my-location";
 import type { KpForecast } from "@/lib/api/client";
 import type { Place } from "@/lib/places";
-import { AURORA_FLOOR_LAT, auroraLatitude, GNSS_ADVICE, gnssRisk } from "@/lib/aurora-gnss";
+import { GNSS_ADVICE, gnssRisk, reachLabel } from "@/lib/aurora-gnss";
 import { EXPLAIN } from "@/lib/explanations";
 import { forecastIsOld } from "@/lib/forecast-age";
 import { formatNum, formatUtc } from "@/lib/format";
@@ -32,7 +32,7 @@ function Notice({ data, nowMs }: { data: KpForecast; nowMs: number }) {
 }
 
 function Page({ title, intro, initial, children }: Props & { title: string; intro: string; children: (d: KpForecast) => React.ReactNode }) {
-  const { data, isError, updatedAt } = useKpForecast(initial);
+  const { data, isError, updatedAt } = useLive<KpForecast>("kp-forecast", "/api/kp-forecast", initial);
   const nowMs = useNow();
 
   return (
@@ -63,12 +63,6 @@ function Page({ title, intro, initial, children }: Props & { title: string; intr
   );
 }
 
-const lat = (kp: number) => {
-  const v = auroraLatitude(kp);
-
-  return v === null ? `Poleward of ${AURORA_FLOOR_LAT}°` : `about ${Math.round(v)}°`;
-};
-
 function AuroraBody({ d }: { d: KpForecast }) {
   const [place, setPlace] = useState<Place | null>(null);
   const likelyKp = Math.max(...d.horizons.map((h) => h.p50));
@@ -95,8 +89,8 @@ function AuroraBody({ d }: { d: KpForecast }) {
                 +{h.horizon_h} h
               </th>
               <td className="py-2 pr-2 tabular-nums">{formatNum(h.p50, 1)}</td>
-              <td className="py-2 pr-2">{lat(h.p50)}</td>
-              <td className="py-2">{lat(h.p90)}</td>
+              <td className="py-2 pr-2">{reachLabel(h.p50)}</td>
+              <td className="py-2">{reachLabel(h.p90)}</td>
             </tr>
           ))}
         </tbody>

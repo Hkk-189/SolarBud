@@ -1,23 +1,15 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { Card, Empty } from "@/components/cards/card";
 import { EChart } from "./echart";
 import { TimeZoneToggle, useTimeZone } from "./time-zone";
-import { REFRESH_MS, useChartColors } from "./use-chart-colors";
+import { useChartColors } from "./use-chart-colors";
+import { useLive } from "./use-live";
 import type { VerificationPoint } from "@/lib/api/client";
 import { verificationOption } from "@/lib/chart-options";
 import { EXPLAIN } from "@/lib/explanations";
 import { scoreVerification } from "@/lib/verification";
-
-async function fetchVerification(): Promise<VerificationPoint[]> {
-  const res = await fetch("/api/verification");
-
-  if (!res.ok) throw new Error(`verification ${res.status}`);
-
-  return res.json();
-}
 
 const TITLE = "Last 48 hours: forecast made 3 h ahead vs what happened";
 
@@ -25,14 +17,7 @@ export function VerificationChart({ initial, Chart = EChart }: { initial: Verifi
   const { utc } = useTimeZone();
   const colors = useChartColors();
 
-  const { data, isError } = useQuery({
-    queryKey: ["verification"],
-    queryFn: fetchVerification,
-    refetchInterval: REFRESH_MS,
-    staleTime: 60_000,
-    retry: 1,
-    initialData: initial ?? undefined,
-  });
+  const { data, isError } = useLive<VerificationPoint[]>("verification", "/api/verification", initial);
 
   const option = useMemo(() => (data ? verificationOption({ points: data, utc, colors }) : {}), [data, utc, colors]);
 
@@ -48,7 +33,9 @@ export function VerificationChart({ initial, Chart = EChart }: { initial: Verifi
 
   return (
     <Card title={TITLE} explain={EXPLAIN.verification}>
-      {total === 0 ? (
+      {data.length === 0 ? (
+        <Empty>No forecasts issued in the last 48 hours.</Empty>
+      ) : total === 0 ? (
         <Empty>No completed 3-hour periods yet.</Empty>
       ) : (
         <>

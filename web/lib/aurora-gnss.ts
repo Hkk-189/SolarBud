@@ -12,6 +12,13 @@ const AURORA: [kp: number, lat: number][] = [
 /** Edge at Kp 5, the weakest row of the table: below it the aurora lies poleward of this. */
 export const AURORA_FLOOR_LAT = AURORA[0][1];
 
+/** The table's reach as words: "about 52°", or "Poleward of 56°" below Kp 5. */
+export function reachLabel(kp: number): string {
+  const lat = auroraLatitude(kp);
+
+  return lat === null ? `Poleward of ${AURORA_FLOOR_LAT}°` : `about ${Math.round(lat)}°`;
+}
+
 /** Geomagnetic latitude the aurora may reach, interpolated between whole Kp. Null below Kp 5. */
 export function auroraLatitude(kp: number): number | null {
   if (Number.isNaN(kp) || kp < AURORA[0][0]) return null;

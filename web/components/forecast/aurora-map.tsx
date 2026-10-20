@@ -3,28 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { EChart } from "@/components/charts/echart";
 import { useChartColors } from "@/components/charts/use-chart-colors";
-import { AURORA_FLOOR_LAT, auroraLatitude } from "@/lib/aurora-gnss";
+import { AURORA_FLOOR_LAT, auroraLatitude, reachLabel } from "@/lib/aurora-gnss";
 import { auroraMapOption, auroraRings, type MapMarker } from "@/lib/aurora-map-option";
 
 const GEOJSON = "/geo/world-land-110m.json";
 
-const deg = (kp: number) => {
-  const lat = auroraLatitude(kp);
-
-  return lat === null ? null : `${Math.round(lat)}°`;
-};
-
 function summary(likelyKp: number, highKp: number): string {
-  const likely = deg(likelyKp);
-  const high = deg(highKp);
+  const likely = auroraLatitude(likelyKp);
 
-  if (likely === null && high === null) return "Map of the world: the aurora stays poleward of 56° geomagnetic latitude.";
-
-  if (likely === null) {
-    return `Map of the world: the aurora stays poleward of 56° geomagnetic latitude, and could reach about ${high} geomagnetic latitude.`;
+  if (likely === null && auroraLatitude(highKp) === null) {
+    return `Map of the world: the aurora stays poleward of ${AURORA_FLOOR_LAT}° geomagnetic latitude.`;
   }
 
-  return `Map of the world: the aurora may be seen down to about ${likely} geomagnetic latitude, and could reach ${high ?? likely}.`;
+  if (likely === null) {
+    return `Map of the world: the aurora stays poleward of ${AURORA_FLOOR_LAT}° geomagnetic latitude, and could reach ${reachLabel(highKp)} geomagnetic latitude.`;
+  }
+
+  return `Map of the world: the aurora may be seen down to ${reachLabel(likelyKp)} geomagnetic latitude, and could reach ${reachLabel(highKp)}.`;
 }
 
 /** World map of the aurora's equatorward edge. The land outline loads once; if it fails the tables carry the same facts. */
@@ -72,7 +67,7 @@ export function AuroraMap({
     return <p className="text-sm text-muted">Map unavailable; the table below has the same information.</p>;
   }
 
-  if (state === "loading") return <div className="h-72 w-full md:h-96" aria-hidden="true" />;
+  if (state === "loading") return <p className="flex h-72 w-full items-center text-sm text-muted md:h-96">Loading map…</p>;
 
   const hasLines = auroraRings(likelyKp, highKp).length > 0;
 
