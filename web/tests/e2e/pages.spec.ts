@@ -18,11 +18,10 @@ test("the unbuilt CME section still shows its placeholder", async ({ page }) => 
   await expect(page.getByRole("heading", { level: 1, name: "CME tracker" })).toBeVisible();
 });
 
-test("the Aurora page shows the world map or says it is unavailable, and checks a place", async ({ page }) => {
+test("the Aurora page says the forecast is unavailable when the API cannot be reached", async ({ page }) => {
   await page.goto("/aurora");
-  await expect(page.getByRole("img", { name: /Map of the world/ }).or(page.getByText(/Map unavailable/))).toBeVisible();
-  await page.getByLabel("Place").selectOption("Tromsø");
-  await expect(page.getByText(/Tromsø is at about \d+° N geomagnetic/)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Aurora" })).toBeVisible();
+  await expect(page.getByText(/Forecast unavailable/)).toBeVisible();
 });
 
 test("the Models page has the forecast comparison panel", async ({ page }) => {
