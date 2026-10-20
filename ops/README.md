@@ -10,17 +10,23 @@ waits until `<url>/health` answers, then sets the production `API_URL` on the Ve
 redeploys `main` from GitHub. It does nothing if Vercel already has that URL, and it leaves Vercel
 alone if the API never answers.
 
+It reads only the tunnel's current run from the journal (by systemd invocation id), ignores
+Cloudflare's own `api.trycloudflare.com` host that cloudflared prints in boot-time errors, and if a
+step fails it prints Vercel's error and the unit retries after 2 minutes (at most 5 times an hour).
+
 Install (once, as the dev user):
 
 ```bash
-cp ops/systemd/solarbud-api-url.service ~/.config/systemd/user/
+cp ops/systemd/solarbud-tunnel.service ops/systemd/solarbud-api-url.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now solarbud-api-url.service
+systemctl --user enable --now solarbud-tunnel.service solarbud-api-url.service
 ```
 
-It is tied to the tunnel (`PartOf`, `WantedBy`), so every tunnel restart re-runs it. Check it with
-`journalctl --user -u solarbud-api-url`. It needs the `vercel` CLI logged in as the dev user.
-Last applied URL: `~/.local/state/solarbud/api_url` (delete it to force an update).
+The updater unit is tied to the tunnel (`PartOf`, `WantedBy`), so every tunnel restart re-runs it.
+Check it with `journalctl --user -u solarbud-api-url`. It needs the `vercel` CLI logged in as the dev
+user. It runs the script from this working tree (`~/code/SolarBud/ops/`), so keep a checkout that has
+`ops/` (that is, `main`) in place. Last applied URL: `~/.local/state/solarbud/api_url` (delete it to
+force an update).
 
 ## check_site.py
 

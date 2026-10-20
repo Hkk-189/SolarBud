@@ -5,38 +5,60 @@ from pathlib import Path
 import pytest
 from ops import update_api_url as u
 
-MARKER = u.MARKER
 OLD = "https://old-url-from-before.trycloudflare.com"
 NEW = "https://leather-vitamin-seats-scout.trycloudflare.com"
+API_HOST_LINE = (
+    'failed to request quick Tunnel: Post "https://api.trycloudflare.com/tunnel": dial tcp: lookup'
+)
 
 
-def journal(*lines: str) -> str:
-    return "\n".join(lines)
+def test_latest_url_is_the_last_one_printed():  # Review Focus 1: the text is one invocation's output
+    assert u.latest_url(f"INF |  {OLD}  |\nINF |  {NEW}  |") == NEW
 
 
-def test_latest_url_uses_only_the_current_run():  # Review Focus 1
-    j = journal(
-        MARKER,
-        f"INF |  {OLD}  |",
-        f"{MARKER} (URL changes on restart).",
-        "INF Requesting new quick Tunnel",
-        f"INF |  {NEW}  |",
-    )
-
-    assert u.latest_url(j, MARKER) == NEW
+def test_no_url_yet_gives_none():
+    assert u.latest_url("INF Requesting new quick Tunnel on trycloudflare.com...") is None
+    assert u.latest_url("") is None
 
 
-def test_a_run_that_has_not_printed_its_url_yet_gives_none_not_the_old_one():  # Review Focus 1
-    j = journal(
-        f"INF |  {OLD}  |", f"{MARKER} (URL changes on restart).", "INF Requesting new quick Tunnel"
-    )
-
-    assert u.latest_url(j, MARKER) is None
+def test_cloudflares_own_api_host_in_a_boot_time_error_is_never_taken_for_the_tunnel():
+    assert u.latest_url(API_HOST_LINE) is None
+    assert u.latest_url(f"{API_HOST_LINE}\nINF |  {NEW}  |\n{API_HOST_LINE}") == NEW
 
 
-def test_without_any_marker_the_last_url_in_the_journal_is_used():
-    assert u.latest_url(journal(f"|  {OLD}  |", f"|  {NEW}  |"), MARKER) == NEW
-    assert u.latest_url("nothing here", MARKER) is None
+class FakeSystemctl:
+    def __init__(self, invocation_id: str):
+        self.calls: list[list[str]] = []
+        self.invocation_id = invocation_id
+
+    def __call__(self, cmd: list[str], **kw):
+        self.calls.append(cmd)
+        out = self.invocation_id + "\n" if cmd[0] == "systemctl" else f"INF |  {NEW}  |\n"
+
+        return subprocess.CompletedProcess(cmd, 0, out, "")
+
+
+def test_the_journal_is_read_for_the_tunnels_current_invocation_only():  # Review Focus 1
+    run = FakeSystemctl("abc123")
+
+    assert NEW in u._read_journal(run=run)
+    assert run.calls[0] == [
+        "systemctl",
+        "--user",
+        "show",
+        "-p",
+        "InvocationID",
+        "--value",
+        "solarbud-tunnel",
+    ]
+    assert "_SYSTEMD_INVOCATION_ID=abc123" in run.calls[1]
+
+
+def test_no_running_invocation_means_nothing_to_read():
+    run = FakeSystemctl("")
+
+    assert u._read_journal(run=run) == ""
+    assert len(run.calls) == 1
 
 
 def test_wait_healthy_returns_true_once_health_answers_200_and_false_if_it_never_does():  # Review Focus 2
@@ -58,7 +80,7 @@ ENVS = {
 
 
 class FakeRun:
-    """Records `vercel api` calls; answers the env listing; can fail one call or all deletes."""
+    """Records `vercel api` calls; answers the env listing; can fail one call."""
 
     def __init__(self, fail_when: str | None = None, envs: dict | None = None):
         self.calls: list[tuple[list[str], dict]] = []
@@ -164,21 +186,39 @@ def _patch_main(monkeypatch: pytest.MonkeyPatch, journal_text: str, healthy: boo
 def test_main_leaves_vercel_alone_when_the_api_never_answers(
     monkeypatch: pytest.MonkeyPatch,
 ):  # Review Focus 2
-    applied = _patch_main(monkeypatch, f"{MARKER}\n|  {NEW}  |", healthy=False)
+    applied = _patch_main(monkeypatch, f"|  {NEW}  |", healthy=False)
 
     assert u.main(sleep=lambda s: None) == 1
     assert applied == []
 
 
 def test_main_applies_a_healthy_url_and_succeeds(monkeypatch: pytest.MonkeyPatch):
-    applied = _patch_main(monkeypatch, f"{MARKER}\n|  {NEW}  |", healthy=True)
+    applied = _patch_main(monkeypatch, f"|  {NEW}  |", healthy=True)
 
     assert u.main(sleep=lambda s: None) == 0
     assert applied == [NEW]
 
 
 def test_main_fails_when_no_url_ever_appears(monkeypatch: pytest.MonkeyPatch):
-    applied = _patch_main(monkeypatch, f"{OLD}\n{MARKER}", healthy=True)
+    applied = _patch_main(monkeypatch, API_HOST_LINE, healthy=True)
 
     assert u.main(sleep=lambda s: None) == 1
     assert applied == []
+
+
+def test_main_reports_vercels_error_text_and_fails_when_a_call_breaks(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    def broken(url: str, state: Path):
+        raise subprocess.CalledProcessError(
+            1, ["vercel"], output="out-must-not-be-printed", stderr="Error: rate limited"
+        )
+
+    monkeypatch.setattr(u, "_read_journal", lambda: f"|  {NEW}  |")
+    monkeypatch.setattr(u, "wait_healthy", lambda url, attempts, delay_s: True)
+    monkeypatch.setattr(u, "apply", broken)
+
+    assert u.main(sleep=lambda s: None) == 1
+    err = capsys.readouterr().err
+    assert "rate limited" in err
+    assert "out-must-not-be-printed" not in err

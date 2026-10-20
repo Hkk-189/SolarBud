@@ -24,6 +24,21 @@ test("the Aurora page says the forecast is unavailable when the API cannot be re
   await expect(page.getByText(/Forecast unavailable/)).toBeVisible();
 });
 
+test("the Aurora page draws the map and checks a place once a forecast arrives", async ({ page }) => {
+  // The server has no API (it is unreachable on purpose), so the browser's own fetch is answered here.
+  const horizons = [1, 3, 6].map((h) => ({ horizon_h: h, p10: 5, p50: 6, p90: 7.5 }));
+
+  await page.route("**/api/kp-forecast", (route) =>
+    route.fulfill({
+      json: { issued_at: new Date().toISOString(), model_version: "e2e", data_stale: false, horizons },
+    }),
+  );
+  await page.goto("/aurora");
+  await expect(page.getByRole("img", { name: /Map of the world/ }).or(page.getByText(/Map unavailable/))).toBeVisible();
+  await page.getByLabel("Place").selectOption("Tromsø");
+  await expect(page.getByText(/Tromsø is at about \d+° N geomagnetic/)).toBeVisible();
+});
+
 test("the Models page has the forecast comparison panel", async ({ page }) => {
   await page.goto("/models");
   await expect(page.getByRole("heading", { level: 2, name: /forecast made 3 h ahead vs what happened/ })).toBeVisible();

@@ -1,3 +1,4 @@
+import http.client
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -49,8 +50,9 @@ def test_a_200_with_a_wrong_body_is_a_problem_not_a_pass_or_a_crash(text: str): 
     assert c.problem(200, text, NOW) == "forecast response has no valid issued_at"
 
 
-def test_a_forecast_dated_in_the_future_is_not_old():
+def test_a_forecast_dated_a_little_ahead_is_fine_but_far_ahead_means_a_clock_jumped():
     assert c.problem(200, body(-5), NOW) is None
+    assert c.problem(200, body(-30), NOW) == "forecast is dated 30 min in the future (clock jump?)"
 
 
 def test_main_succeeds_for_a_fresh_forecast_and_fails_loudly_otherwise(
@@ -88,6 +90,16 @@ def test_main_treats_a_network_error_as_a_problem(capsys: pytest.CaptureFixture[
     assert "connection refused" in capsys.readouterr().err
 
 
+def test_main_treats_a_broken_response_as_a_problem_not_a_traceback(
+    capsys: pytest.CaptureFixture[str],
+):
+    def truncated(url: str) -> tuple[int, str]:
+        raise http.client.IncompleteRead(b"par")
+
+    assert c.main(["check_site.py", "https://x.example"], fetch=truncated, now=lambda: NOW) == 1
+    assert "IncompleteRead" in capsys.readouterr().err
+
+
 def test_main_needs_a_site_argument(capsys: pytest.CaptureFixture[str]):
     assert c.main(["check_site.py"], fetch=lambda url: (200, ""), now=lambda: NOW) == 2
 
@@ -98,6 +110,7 @@ def test_the_workflow_runs_every_two_hours_and_on_demand_and_calls_the_checker()
 
     assert triggers["schedule"] == [{"cron": "17 */2 * * *"}]
     assert "workflow_dispatch" in triggers
+    assert wf["permissions"] == {"contents": "read"}
     steps = next(iter(wf["jobs"].values()))["steps"]
     assert any(
         "ops/check_site.py https://solarbud-hkk-189s-projects.vercel.app" in s.get("run", "")

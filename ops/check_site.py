@@ -5,6 +5,7 @@ Exit 0 = healthy, 1 = a problem (printed to stderr, so the workflow run goes red
 2 = bad usage. Standard library only.
 """
 
+import http.client
 import json
 import sys
 import urllib.error
@@ -14,6 +15,8 @@ from datetime import UTC, datetime, timedelta
 
 # The worker forecasts every 5 min and the web calls 15 min stale; 30 min avoids flapping on one missed cycle.
 MAX_AGE = timedelta(minutes=30)
+# A forecast dated further ahead than this means a clock jumped (it has happened on the home machine).
+CLOCK_SKEW = timedelta(minutes=10)
 
 
 def problem(status: int, body: str, now: datetime, max_age: timedelta = MAX_AGE) -> str | None:
@@ -27,6 +30,10 @@ def problem(status: int, body: str, now: datetime, max_age: timedelta = MAX_AGE)
     if issued.tzinfo is None:
         issued = issued.replace(tzinfo=UTC)
     age = now - issued
+    if age < -CLOCK_SKEW:
+        return (
+            f"forecast is dated {int(-age.total_seconds() // 60)} min in the future (clock jump?)"
+        )
     if age > max_age:
         return f"forecast is {int(age.total_seconds() // 60)} min old"
 
@@ -36,7 +43,7 @@ def problem(status: int, body: str, now: datetime, max_age: timedelta = MAX_AGE)
 def _fetch(url: str) -> tuple[int, str]:
     try:
         with urllib.request.urlopen(url, timeout=20) as r:
-            return r.status, r.read().decode()
+            return r.status, r.read().decode(errors="replace")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode(errors="replace")
 
@@ -51,8 +58,11 @@ def main(
         return 2
     try:
         status, body = fetch(f"{argv[1].rstrip('/')}/api/kp-forecast")
-    except OSError as e:
-        print(f"site unreachable: {e}", file=sys.stderr)
+    except (
+        OSError,
+        http.client.HTTPException,
+    ) as e:  # a cut-off body raises IncompleteRead, not OSError
+        print(f"site unreachable: {e!r}", file=sys.stderr)
         return 1
     found = problem(status, body, now())
     if found:
