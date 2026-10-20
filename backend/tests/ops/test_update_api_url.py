@@ -48,43 +48,78 @@ def test_wait_healthy_returns_true_once_health_answers_200_and_false_if_it_never
     assert u.wait_healthy(NEW, 3, 1.0, get=lambda url: 503, sleep=lambda s: None) is False
 
 
+ENVS = {
+    "envs": [
+        {"id": "keep1", "key": "OTHER", "target": ["production"]},
+        {"id": "old1", "key": "API_URL", "target": ["production"]},
+        {"id": "prev1", "key": "API_URL", "target": ["preview"]},
+    ]
+}
+
+
 class FakeRun:
-    def __init__(self, fail_on: int | None = None, rm_fails: bool = False):
+    """Records `vercel api` calls; answers the env listing; can fail one call or all deletes."""
+
+    def __init__(self, fail_when: str | None = None, envs: dict | None = None):
         self.calls: list[tuple[list[str], dict]] = []
-        self.fail_on = fail_on
-        self.rm_fails = rm_fails
+        self.fail_when = fail_when
+        self.envs = ENVS if envs is None else envs
+
+    @staticmethod
+    def route(cmd: list[str]) -> str:
+        method = cmd[cmd.index("-X") + 1] if "-X" in cmd else "GET"
+
+        return f"{method} {cmd[cmd.index('api') + 1]}"
 
     def __call__(self, cmd: list[str], **kw):
         if "--input" in cmd:  # the request body file is temporary: read it while it still exists
             kw["body"] = Path(cmd[cmd.index("--input") + 1]).read_text()
         self.calls.append((cmd, kw))
-        n = len(self.calls)
-        if n == self.fail_on:
+        route = self.route(cmd)
+        if self.fail_when and self.fail_when in route:
             raise subprocess.CalledProcessError(1, cmd)
-        code = 1 if (self.rm_fails and n == 1) else 0
-        return subprocess.CompletedProcess(cmd, code, "", "")
+        out = json.dumps(self.envs) if route == "GET /v9/projects/solarbud/env" else "{}"
+
+        return subprocess.CompletedProcess(cmd, 0, out, "")
+
+    @property
+    def routes(self) -> list[str]:
+        return [self.route(c) for c, _ in self.calls]
 
 
-def test_apply_removes_adds_and_redeploys_then_remembers_the_url(tmp_path: Path):
+def test_apply_updates_the_production_api_url_in_place_then_redeploys_and_remembers(tmp_path: Path):
     state = tmp_path / "state" / "api_url"
     run = FakeRun()
 
     assert u.apply(NEW, state, run=run) is True
-    cmds = [c for c, _ in run.calls]
-    assert [c[3:6] for c in cmds[:2]] == [["env", "rm", "API_URL"], ["env", "add", "API_URL"]]
-    assert cmds[2][3] == "api" and "/v13/deployments" in cmds[2][4]
+    assert run.routes == [
+        "GET /v9/projects/solarbud/env",
+        "PATCH /v9/projects/solarbud/env/old1",  # never the preview variable or another key
+        "POST /v13/deployments?forceNew=1",
+    ]
     assert state.read_text().strip() == NEW
 
 
-def test_the_new_url_goes_through_stdin_never_argv(
-    tmp_path: Path,
-):  # secrets stay out of process listings
+def test_apply_creates_the_variable_as_sensitive_production_when_there_is_none(tmp_path: Path):
+    run = FakeRun(envs={"envs": [{"id": "keep1", "key": "OTHER", "target": ["production"]}]})
+    u.apply(NEW, tmp_path / "s", run=run)
+
+    assert run.routes[1] == "POST /v10/projects/solarbud/env"
+    assert json.loads(run.calls[1][1]["body"]) == {
+        "key": "API_URL",
+        "value": NEW,
+        "type": "sensitive",
+        "target": ["production"],
+    }
+
+
+def test_the_new_url_travels_in_a_private_body_file_never_in_argv(tmp_path: Path):
     run = FakeRun()
     u.apply(NEW, tmp_path / "s", run=run)
-    add_cmd, add_kw = run.calls[1]
+    cmd, kw = run.calls[1]
 
-    assert NEW not in " ".join(add_cmd)
-    assert add_kw["input"] == NEW
+    assert NEW not in " ".join(cmd)  # process listings must not show it
+    assert json.loads(kw["body"]) == {"value": NEW}
 
 
 def test_the_deploy_request_builds_main_from_github_for_production(tmp_path: Path):
@@ -105,24 +140,16 @@ def test_same_url_as_last_time_does_nothing(tmp_path: Path):  # Review Focus 3
     assert run.calls == []
 
 
-def test_a_failed_add_raises_and_leaves_the_state_alone_so_the_next_run_retries(
-    tmp_path: Path,
-):  # Review Focus 5
+@pytest.mark.parametrize("failing", ["PATCH /v9", "POST /v13"])
+def test_a_failed_step_raises_and_leaves_the_state_alone_so_the_next_run_retries(  # Review Focus 5
+    tmp_path: Path, failing: str
+):
     state = tmp_path / "s"
     state.write_text(OLD)
 
     with pytest.raises(subprocess.CalledProcessError):
-        u.apply(NEW, state, run=FakeRun(fail_on=2))
+        u.apply(NEW, state, run=FakeRun(fail_when=failing))
     assert state.read_text() == OLD
-
-
-def test_a_failed_remove_is_tolerated_because_the_variable_may_already_be_gone(
-    tmp_path: Path,
-):  # Review Focus 5
-    state = tmp_path / "s"
-
-    assert u.apply(NEW, state, run=FakeRun(rm_fails=True)) is True
-    assert state.read_text().strip() == NEW
 
 
 def _patch_main(monkeypatch: pytest.MonkeyPatch, journal_text: str, healthy: bool):

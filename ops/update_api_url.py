@@ -19,11 +19,12 @@ UNIT = "solarbud-tunnel"
 MARKER = "Started SolarBud API quick tunnel"
 URL_RE = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 SCOPE = "hkk-189s-projects"
+PROJECT = "solarbud"
 STATE = Path.home() / ".local" / "state" / "solarbud" / "api_url"
 # Production builds come from GitHub main, never from a local upload.
 DEPLOY = {
-    "name": "solarbud",
-    "project": "solarbud",
+    "name": PROJECT,
+    "project": PROJECT,
     "target": "production",
     "gitSource": {"type": "github", "repoId": 1404235634, "ref": "main"},
 }
@@ -68,34 +69,38 @@ def wait_healthy(
     return False
 
 
+def _api(run: Run, path: str, method: str = "GET", body: dict | None = None, check: bool = True):
+    """One `vercel api` call. The body goes through a private temp file so values never appear in argv."""
+    cmd = ["vercel", "--scope", SCOPE, "api", path]
+    if method != "GET":
+        cmd += ["-X", method]
+    if body is None:
+        return run(cmd, capture_output=True, text=True, check=check)
+    with tempfile.NamedTemporaryFile("w", suffix=".json") as f:  # created 0600, deleted on exit
+        json.dump(body, f)
+        f.flush()
+        return run([*cmd, "--input", f.name], capture_output=True, text=True, check=check)
+
+
 def apply(url: str, state_path: Path, run: Run = subprocess.run) -> bool:
     """Point Vercel at `url` and redeploy. False if it already did for this URL.
 
-    The state file is written only after every step worked, so a half-done run is retried next time.
-    The remove may fail (the variable can already be gone after an earlier half-done run); the add may not.
+    Uses the project API, not `vercel env`, because the CLI's env commands need a linked project in the
+    working directory and a systemd service has none. The variable is updated in place (the API's DELETE
+    needs an interactive confirmation). The state file is written only after every step worked, so a
+    half-done run is simply retried next time.
     """
     if state_path.exists() and state_path.read_text().strip() == url:
         return False
 
-    vercel = ["vercel", "--scope", SCOPE]
-    run([*vercel, "env", "rm", "API_URL", "production", "--yes"], capture_output=True, text=True)
-    run(
-        [*vercel, "env", "add", "API_URL", "production"],
-        input=url,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-
-    with tempfile.NamedTemporaryFile("w", suffix=".json") as body:
-        json.dump(DEPLOY, body)
-        body.flush()
-        run(
-            [*vercel, "api", "/v13/deployments?forceNew=1", "-X", "POST", "--input", body.name],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+    envs = json.loads(_api(run, f"/v9/projects/{PROJECT}/env").stdout)["envs"]
+    existing = [e for e in envs if e["key"] == "API_URL" and "production" in e["target"]]
+    if existing:
+        _api(run, f"/v9/projects/{PROJECT}/env/{existing[0]['id']}", "PATCH", {"value": url})
+    else:
+        body = {"key": "API_URL", "value": url, "type": "sensitive", "target": ["production"]}
+        _api(run, f"/v10/projects/{PROJECT}/env", "POST", body)
+    _api(run, "/v13/deployments?forceNew=1", "POST", DEPLOY)
 
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(url + "\n")
