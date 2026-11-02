@@ -36,7 +36,7 @@ export function LiveStormHero({
       />
       {clock > 0 && (
         <p className="mt-3 text-xs tabular-nums text-muted">
-          Refreshed {formatUtc(new Date(kp.updatedAt).toISOString())}.
+          {kp.data && `Data updated ${formatUtc(kp.data.issued_at)}. `}Refreshed {formatUtc(new Date(kp.updatedAt).toISOString())}.
         </p>
       )}
     </>
