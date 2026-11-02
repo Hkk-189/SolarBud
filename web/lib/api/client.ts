@@ -10,7 +10,8 @@ export type KpPoint = components["schemas"]["KpPoint"];
 
 export type VerificationPoint = components["schemas"]["VerificationPoint"];
 
-export type ApiResult<T> = { ok: true; data: T } | { ok: false };
+/** `demo` marks data that is a recording, shown because the live API did not answer. */
+export type ApiResult<T> = { ok: true; data: T; demo?: true } | { ok: false };
 
 const TIMEOUT_MS = 3000;
 

@@ -4,21 +4,31 @@ import { SolarWindCharts } from "@/components/charts/solar-wind-charts";
 import { KpForecastCard } from "@/components/cards/kp-forecast-card";
 import { SolarWindCard } from "@/components/cards/solar-wind-card";
 import { LiveStormHero } from "@/components/home/live-storm-hero";
-import { getAlertCurrent, getKpForecast, getKpObserved, getSolarWindLatest, getSolarWindWindow } from "@/lib/api/client";
+import { DemoBanner } from "@/components/shell/demo-banner";
+import {
+  demoAlertCurrent,
+  demoKpForecast,
+  demoKpObserved,
+  demoSolarWindLatest,
+  demoSolarWindWindow,
+  isDemo,
+  recordedAt,
+} from "@/lib/demo";
 
 export default async function Home() {
   const [kp, alert, wind, history, observed] = await Promise.all([
-    getKpForecast(),
-    getAlertCurrent(),
-    getSolarWindLatest(),
-    getSolarWindWindow(24),
-    getKpObserved(24),
+    demoKpForecast(),
+    demoAlertCurrent(),
+    demoSolarWindLatest(),
+    demoSolarWindWindow(24),
+    demoKpObserved(24),
   ]);
 
   const now = nowMs();
 
   return (
     <div className="space-y-8">
+      {isDemo(kp, alert, wind, history, observed) && <DemoBanner at={recordedAt} />}
       <LiveStormHero forecast={kp} alert={alert} observed={observed} serverNowMs={now} />
       <div className="grid items-start gap-4 md:grid-cols-[2fr_1fr]">
         <KpBandChart initial={kp.ok ? kp.data : null} initialObserved={observed.ok ? observed.data : null} />

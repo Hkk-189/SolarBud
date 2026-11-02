@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { VerificationChart } from "@/components/charts/verification-chart";
-import { getVerification } from "@/lib/api/client";
+import { DemoBanner } from "@/components/shell/demo-banner";
+import { demoVerification, isDemo, recordedAt } from "@/lib/demo";
 import { COVERAGE, MODEL_LABEL, SCORES } from "@/lib/model-card";
 
 export const metadata: Metadata = { title: "Models" };
@@ -14,10 +15,11 @@ const pod7 = (h: number) => pct(lgbm.find((r) => r.horizon === h)?.pod7 ?? 0);
 const signed = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(3)}`;
 
 export default async function Models() {
-  const verification = await getVerification();
+  const verification = await demoVerification();
 
   return (
     <div className="space-y-6">
+      {isDemo(verification) && <DemoBanner at={recordedAt} />}
       <header className="max-w-prose space-y-2">
         <h1 className="text-2xl font-bold">Models</h1>
         <p className="text-base">
