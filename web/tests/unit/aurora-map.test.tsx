@@ -49,3 +49,13 @@ it("shows a visible loading line, not a blank box, while the outline is still lo
   render(<AuroraMap likelyKp={6} highKp={7} marker={null} Chart={FakeChart} />);
   expect(screen.getByText("Loading map…")).toBeTruthy();
 });
+
+it("labels the map 'Quiet now' only while no line is drawn", async () => {
+  vi.stubGlobal("fetch", () => Promise.resolve(Response.json(land)));
+  const quiet = render(<AuroraMap likelyKp={3} highKp={4} marker={null} Chart={FakeChart} />);
+  await waitFor(() => expect(screen.getByText("Quiet now")).toBeTruthy(), { timeout: 5000 });
+  quiet.unmount();
+  render(<AuroraMap likelyKp={6} highKp={7} marker={null} Chart={FakeChart} />);
+  await waitFor(() => expect(screen.getByTestId("map")).toBeTruthy(), { timeout: 5000 });
+  expect(screen.queryByText("Quiet now")).toBeNull();
+});
