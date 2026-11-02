@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { auroraLatitude, gnssRisk } from "@/lib/aurora-gnss";
 
-describe("auroraLatitude (docs/context.md rule: Kp 5-9 -> 56, 54, 52, 50, 47)", () => {
+describe("auroraLatitude (rule: Kp 5-9 -> 56, 54, 52, 50, 47)", () => {
   it("returns the table values at whole Kp", () => {
     expect([5, 6, 7, 8, 9].map(auroraLatitude)).toEqual([56, 54, 52, 50, 47]);
   });

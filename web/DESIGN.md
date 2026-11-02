@@ -239,7 +239,7 @@ The visual identity revolves around cool neutrals plus a concentrated orange ban
 Orange should be visually dominant, but not everywhere. The product works because most surfaces stay neutral and let orange carry state, motion, and emphasis.
 
 ## Typography
-One family: Archivo (variable weight and width axes), loaded with `next/font/google` and self-hosted at build (ADR-0007). It gives the UI a firm, technical voice without an editorial feel.
+One family: Archivo (variable weight and width axes), loaded with `next/font/google` and self-hosted at build. It gives the UI a firm, technical voice without an editorial feel.
 
 - **Primary typeface:** `Archivo, ui-sans-serif, system-ui, sans-serif` (`--font-sans`).
 - **Numbers:** Archivo with `tabular-nums` so columns align. No monospace for ordinary text or values.

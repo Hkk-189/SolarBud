@@ -1,4 +1,4 @@
-// Test-split scores from docs/model-cards/stage2-lgbm.md (`make evaluate`): the five held-out storms
+// Test-split scores from `make evaluate`: the five held-out storms
 // plus 2025 onward. Regenerate this table whenever the model card changes.
 type ModelId = "persistence" | "newell-kp" | "lgbm-p50";
 

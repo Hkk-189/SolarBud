@@ -12,8 +12,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Vendored anti-slop Oxlint plugin; linted by Oxlint's own rules, not ours.
-    "tools/oxlint/anti-slop/**",
   ]),
 ]);
 

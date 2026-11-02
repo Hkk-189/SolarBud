@@ -3,7 +3,7 @@ import { GeoComponent, GridComponent, MarkLineComponent, TooltipComponent } from
 import { init, registerMap, use as register } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 
-// Only what the charts use, so the bundle stays small (ADR-0006).
+// Only what the charts use, so the bundle stays small.
 register([
   LineChart,
   LinesChart,
