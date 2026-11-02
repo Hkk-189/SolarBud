@@ -73,7 +73,14 @@ export function AuroraMap({
 
   return (
     <>
-      <Chart option={option} label={summary(likelyKp, highKp)} heightClass="h-72 md:h-96" />
+      <div className="relative">
+        <Chart option={option} label={summary(likelyKp, highKp)} heightClass="h-72 md:h-96" />
+        {!hasLines && (
+          <span className="pointer-events-none absolute left-3 top-3 rounded-md bg-surface px-2 py-1 text-sm font-medium text-foreground">
+            Quiet now
+          </span>
+        )}
+      </div>
       <p className="mt-2 text-xs text-muted">
         {hasLines
           ? "The aurora may be seen on the pole side of the solid line. The dashed line is how far it could reach. Lines are drawn from geomagnetic latitude, so they do not follow the map's latitudes."
