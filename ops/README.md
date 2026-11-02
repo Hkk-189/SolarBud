@@ -28,6 +28,14 @@ user. It runs the script from this working tree (`~/code/SolarBud/ops/`), so kee
 `ops/` (that is, `main`) in place. Last applied URL: `~/.local/state/solarbud/api_url` (delete it to
 force an update).
 
+## record_demo.py
+
+Writes `web/lib/demo-snapshot.ts` from a healthy local API (`python3 ops/record_demo.py`). When the live
+API does not answer, the server-rendered pages show that recording under a banner that says so and when
+it was made; the `/api/*` proxies still return 503, so a page that is already open never swaps live data
+for the recording. Re-record whenever you want the demo to show something more interesting, such as a
+storm, then commit the file.
+
 ## check_site.py
 
 Run by `.github/workflows/site-check.yml` every 2 hours: fails when the public forecast is

@@ -1,21 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test("home shows the shell, an empty state and the disclaimer", async ({ page }) => {
+test("home shows the shell, a labelled recording and the disclaimer when the API is down", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
-  await expect(
-    page.getByRole("heading", {
-      level: 1,
-      name: "We can't reach a current forecast, so we can't say whether a storm is coming.",
-    }),
-  ).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link")).toHaveCount(7);
   await expect(page.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("status").filter({ hasText: "We can't reach a current forecast" })).toBeVisible();
-  await expect(page.getByRole("img", { name: /In 1 hour: no forecast/ })).toBeVisible();
-  await expect(page.getByText("no forecast", { exact: true })).toHaveCount(3);
-  await expect(page.getByText("Alert status unavailable")).toBeVisible();
-  await expect(page.getByText("Solar wind history unavailable.")).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /shown from a recording made \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Kp forecast" })).toBeVisible();
   await expect(page.getByRole("link", { name: "NOAA SWPC" })).toHaveAttribute(
     "href",
     "https://www.swpc.noaa.gov",

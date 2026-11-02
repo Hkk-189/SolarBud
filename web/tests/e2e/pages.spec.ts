@@ -18,14 +18,14 @@ test("the unbuilt CME section still shows its placeholder", async ({ page }) => 
   await expect(page.getByRole("heading", { level: 1, name: "CME tracker" })).toBeVisible();
 });
 
-test("the Aurora page says the forecast is unavailable when the API cannot be reached", async ({ page }) => {
+test("the Aurora page labels the recording it shows when the API cannot be reached", async ({ page }) => {
   await page.goto("/aurora");
   await expect(page.getByRole("heading", { level: 1, name: "Aurora" })).toBeVisible();
-  await expect(page.getByText(/Forecast unavailable/)).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /shown from a recording made/ })).toBeVisible();
 });
 
 test("the Aurora page draws the map and checks a place once a forecast arrives", async ({ page }) => {
-  // The server has no API (it is unreachable on purpose), so the browser's own fetch is answered here.
+  // The server has no API (it is unreachable on purpose) and falls back to the recording; the browser's own fetch is answered here.
   const horizons = [1, 3, 6].map((h) => ({ horizon_h: h, p10: 5, p50: 6, p90: 7.5 }));
 
   await page.route("**/api/kp-forecast", (route) =>

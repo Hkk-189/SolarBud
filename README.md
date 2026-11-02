@@ -2,7 +2,7 @@
 
 Geomagnetic storm forecasts and alerts. Not an official forecast — see https://www.swpc.noaa.gov.
 
-**Live dashboard:** https://solarbud-hkk-189s-projects.vercel.app (the API runs on the owner's own machine, so the data can be offline when that machine is).
+**Live dashboard:** https://solarbud-hkk-189s-projects.vercel.app (the API runs on the owner's own machine, so when it is offline the site shows a clearly labelled recording of earlier data instead).
 
 ## What it shows
 
