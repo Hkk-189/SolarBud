@@ -17,15 +17,19 @@ A CME tracker is planned. The alert engine runs as a dry run (nothing is sent ye
 
 ## Run it locally
 
+Needs Python with [uv](https://docs.astral.sh/uv/), Node with corepack (pnpm), and Docker.
+
 ```bash
 cp .env.example .env
 make setup                 # uv sync + web install
-docker compose up -d       # postgres, api, worker (needs artefacts/*.joblib)
+make load-history          # download OMNI + Kp (1995 onwards) into data/ (about 5 GB of downloads, takes a while)
+make train-stage2          # train the three horizons into artefacts/*.joblib
+docker compose up -d       # postgres, api, worker (the api and worker load artefacts/*.joblib)
 cd web && corepack pnpm dev    # http://localhost:3000
 make lint && make test     # must pass before any commit
 ```
 
-`make test-e2e` runs the Playwright suite against an unreachable API, so stop `pnpm dev` first.
+`data/` and `artefacts/` are not in the repository, so the two middle steps are required on a fresh clone. The worker needs about 8 hours of ingested solar wind before it can issue its first forecast. `make test-e2e` runs the Playwright suite against an unreachable API, so stop `pnpm dev` first.
 
 ## Layout
 
@@ -45,6 +49,18 @@ LightGBM quantile Kp forecasts (+1/+3/+6 h) from real-time L1 solar wind, traine
 | +6 h | +0.14 | 0.47 (0.35) | 0.84 |
 
 Kp ≥ 7 detection is still weak at +3 h and +6 h, and the intervals are too narrow during the largest storms. Training is reproducible with `make train-stage2`; `make evaluate` regenerates the metrics.
+
+## Data and credits
+
+- Real-time solar wind and Kp: [NOAA Space Weather Prediction Center](https://www.swpc.noaa.gov) (US government data, public domain).
+- Training solar wind: the [OMNI high-resolution dataset](https://omniweb.gsfc.nasa.gov/) from NASA SPDF.
+- Training Kp: the GFZ Potsdam Kp index, [kp.gfz.de](https://kp.gfz.de) (CC BY 4.0). Matzka, J., Stolle, C., Yamazaki, Y., Bronkalla, O. and Morschhauser, A., 2021. The Geomagnetic Kp Index and Derived Indices of Geomagnetic Activity. *Space Weather*, 19, e2020SW002641.
+- Map outline: [Natural Earth](https://www.naturalearthdata.com) 1:110m land (public domain; see `web/public/geo/SOURCE.md`). Geomagnetic pole: NOAA NCEI WMM2025.
+- Type: Archivo, loaded through `next/font/google` (SIL Open Font License).
+
+## Licence
+
+[MIT](LICENSE).
 
 ## Contributors
 
