@@ -59,6 +59,7 @@ it("starts from the server data, then follows a refetched alert", async () => {
 
   expect(quietText).not.toBe(warnText);
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(quietText);
+  expect(screen.getByText(/Data updated 2026-10-11 00:00 UTC/)).toBeTruthy();
   expect(screen.getByText(/Refreshed 2026-10-11 00:05 UTC/)).toBeTruthy();
 
   await act(() => client.refetchQueries({ queryKey: ["alert-current"] }));
