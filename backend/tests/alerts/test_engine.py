@@ -46,7 +46,7 @@ def test_kp_threshold_is_g1():
 
 
 def test_defaults_are_the_validation_picks():
-    """Chosen on the 2022-24 validation block (docs/reports/alert-tuning.md), not on a held-out storm."""
+    """Chosen on the 2022-24 validation block, not on a held-out storm."""
     assert (CFG.p_clear, CFG.cooldown_cycles) == (0.2, 72)
 
 

@@ -1,6 +1,6 @@
 import { gLevel } from "./g-level";
 
-// docs/context.md "Aurora visibility (rough rule, v1 only)": equatorward edge in geomagnetic latitude.
+// Aurora visibility (rough rule, v1 only): equatorward edge in geomagnetic latitude.
 const AURORA: [kp: number, lat: number][] = [
   [5, 56],
   [6, 54],
@@ -36,7 +36,7 @@ export function auroraLatitude(kp: number): number | null {
 
 type GnssRisk = "Low" | "Moderate" | "High" | "Severe";
 
-// docs/context.md "GNSS risk mapping (v1 heuristic)": < G1 Low, G1-G2 Moderate, G3 High, G4-G5 Severe.
+// GNSS risk mapping (v1 heuristic): < G1 Low, G1-G2 Moderate, G3 High, G4-G5 Severe.
 const RISK_BY_G: GnssRisk[] = ["Low", "Moderate", "Moderate", "High", "Severe", "Severe"];
 
 export function gnssRisk(kp: number): GnssRisk | null {
