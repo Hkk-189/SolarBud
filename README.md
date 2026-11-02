@@ -4,6 +4,16 @@ Geomagnetic storm forecasts and alerts. Not an official forecast — see https:/
 
 **Live dashboard:** https://solarbud-hkk-189s-projects.vercel.app (the API runs on the owner's own machine, so when it is offline the site shows a clearly labelled recording of earlier data instead).
 
+## Screenshots
+
+Taken on a quiet day (2026-11-02), so the storm ruler and the aurora map show no activity.
+
+![Overview: storm status, storm ruler, Kp forecast with uncertainty band and forecast table](screenshots/overview.png)
+
+![Aurora: world map and place check, labelled "Quiet now" because no aurora line is drawn below about Kp 5](screenshots/aurora.png)
+
+![GNSS: risk for GPS and RTK work over the next 6 hours](screenshots/gnss.png)
+
 ## What it shows
 
 - **Overview:** a one-sentence storm status, a storm ruler (Kp on NOAA's G scale with the likely value and range for now, +1, +3 and +6 h), the Kp forecast with its uncertainty, and the last 24 hours of solar wind. Everything refreshes every 5 minutes.
